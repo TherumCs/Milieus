@@ -18,6 +18,31 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 // ═════════════════════════════════════════════════════════════════════════════
 
 add_action( 'admin_menu', function() {
+	// Top-level sidebar entry. Sits above Comments by default (position 25.5
+	// → just before Appearance) so it's findable without scrolling. Icon is
+	// the WP built-in groups dashicon — no asset to ship.
+	add_menu_page(
+		__( 'Milieus', 'milieus' ),                  // page title (browser tab)
+		__( 'Milieus', 'milieus' ),                  // sidebar label
+		'manage_options',
+		'milieus-roles',
+		'milieus_render_roles_page',
+		'dashicons-groups',
+		25.5
+	);
+	// First submenu = same page, but with a friendlier label. WP duplicates
+	// the parent label as the first submenu by default; overriding it gives
+	// us "Milieus → Member Groups" instead of "Milieus → Milieus".
+	add_submenu_page(
+		'milieus-roles',
+		__( 'Member Groups', 'milieus' ),
+		__( 'Member Groups', 'milieus' ),
+		'manage_options',
+		'milieus-roles',
+		'milieus_render_roles_page'
+	);
+	// Mirror under Users → Member Groups too, so the old URL keeps working
+	// and the wp-admin muscle memory is preserved.
 	add_users_page(
 		__( 'Member Groups', 'milieus' ),
 		__( 'Member Groups', 'milieus' ),
