@@ -103,11 +103,12 @@
 .th-inline .th-unit{font-size:13px;color:var(--tx2);font-weight:500}
 
 /* === URL preview === */
-.th-url-preview{display:flex;align-items:stretch;max-width:520px;border:1px solid var(--bd);border-radius:var(--radius-md);overflow:hidden;background:var(--sf2);font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:13px}
-.th-url-preview .prefix{padding:9px 12px;color:var(--tx3);background:var(--sf2);border-right:1px solid var(--bd);white-space:nowrap}
-.th-url-preview .slug{flex:1;padding:9px 12px;border:0;outline:none;background:var(--sf);color:var(--tx);font:inherit;min-width:0}
-.th-url-preview .slug:focus{box-shadow:inset 3px 0 0 var(--ac)}
-.th-url-preview .copy{padding:9px 12px;background:var(--tx);color:#fff;border:0;cursor:pointer;font:600 12px/1 inherit}
+.th-url-preview{display:flex;align-items:stretch;max-width:640px;border:1px solid var(--bd);border-radius:var(--radius-md);overflow:hidden;background:var(--sf);font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:13px;transition:border-color var(--e),box-shadow var(--e)}
+.th-url-preview:focus-within{border-color:var(--ac);box-shadow:0 0 0 3px var(--ac-s)}
+.th-url-preview .prefix{padding:10px 12px;color:var(--tx3);background:var(--sf2);border-right:1px solid var(--bd);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%;display:flex;align-items:center;user-select:all}
+.th-url-preview .slug{flex:1;min-width:140px;padding:10px 12px;border:0;outline:none;background:var(--sf);color:var(--tx);font:600 13px/1.2 ui-monospace,"SF Mono",Menlo,monospace;letter-spacing:.01em}
+.th-url-preview .slug::placeholder{color:var(--tx3);font-weight:400;letter-spacing:0}
+.th-url-preview .copy{padding:10px 14px;background:var(--tx);color:#fff;border:0;cursor:pointer;font:600 12px/1 var(--f);white-space:nowrap;transition:background var(--e)}
 .th-url-preview .copy:hover{background:var(--ac)}
 
 /* === Reg design customizer + preview === */
