@@ -4,7 +4,7 @@ Tags: roles, capabilities, user management, woocommerce, pricing
 Requires at least: 6.4
 Tested up to: 6.7
 Requires PHP: 8.0
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,6 +69,14 @@ It's applied as a negative cart fee on `woocommerce_cart_calculate_fees`, so it 
 Milieus restores core administrator caps on every admin page load. It's there to prevent third-party tools from accidentally locking you out of wp-admin. To turn it off, set `MILIEUS_DISABLE_CAPS_HEAL` to `true` in `wp-config.php`.
 
 == Changelog ==
+
+= 1.1.0 =
+* Reframed as **Member Groups** — same WordPress roles under the hood, but the UI matches how people actually think about them.
+* **Group lifetime + member duration**: each group can be permanent or auto-expire on a date. Each new member gets a default duration; daily cron sweep enforces both.
+* **Custom registration links**: each group can expose `/register/{slug}` with a fully customizable sign-up card (logo, brand mark, heading, message, color, button text, extra fields, page background). Live preview while editing.
+* **Members tab**: per-group typeahead search, member table with joined date / expiry / source, per-row Remove, bulk extend / reset / revoke, CSV import.
+* New files: `includes/expiry.php`, `includes/members.php`, `includes/registration.php`.
+* Backward-compatible with v1.0.0 stored data.
 
 = 1.0.0 =
 * Initial release. Extracted from the Therum OS `therum-auth` roles slice.
