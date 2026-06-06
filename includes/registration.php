@@ -113,6 +113,15 @@ function milieus_process_registration( array $group ): void {
 	$pass    = (string) ( $_POST['password'] ?? '' );
 	$errors  = [];
 
+	// Spam defense (honeypot + per-IP rate limit) before any work.
+	if ( function_exists( 'milieus_spam_check' ) ) {
+		$spam = milieus_spam_check();
+		if ( $spam ) {
+			milieus_render_registration_page( $group, [ $spam ], [ 'email' => $email ] );
+			exit;
+		}
+	}
+
 	if ( ! is_email( $email ) )                            $errors[] = __( 'A valid email is required.', 'milieus' );
 	if ( strlen( $pass ) < 8 )                             $errors[] = __( 'Password must be at least 8 characters.', 'milieus' );
 	if ( email_exists( $email ) )                          $errors[] = __( 'An account with that email already exists.', 'milieus' );
@@ -244,6 +253,7 @@ button:hover{filter:brightness(1.1)}
 	<?php echo $err_html; ?>
 	<form method="post" autocomplete="on">
 		<input type="hidden" name="milieus_nonce" value="<?php echo esc_attr( $nonce ); ?>">
+		<?php echo function_exists( 'milieus_honeypot_field' ) ? milieus_honeypot_field() : ''; ?>
 		<?php echo $extras_html; ?>
 		<label>Email <input type="email" name="email" required value="<?php echo $email_v; ?>" autocomplete="email"></label>
 		<label>Password <input type="password" name="password" required autocomplete="new-password" minlength="8"></label>

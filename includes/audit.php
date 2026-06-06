@@ -29,8 +29,10 @@ function milieus_audit_table(): string {
 
 /**
  * Create the table. Called from the activation hook in milieus.php.
+ * Returns true on success, false if dbDelta couldn't create the table —
+ * the caller surfaces an admin notice so the failure isn't silent.
  */
-function milieus_audit_install_schema(): void {
+function milieus_audit_install_schema(): bool {
 	global $wpdb;
 	$table = milieus_audit_table();
 	$charset = $wpdb->get_charset_collate();
@@ -50,11 +52,47 @@ function milieus_audit_install_schema(): void {
 		KEY event (event)
 	) {$charset};";
 	require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+	$wpdb->suppress_errors( true );
 	dbDelta( $sql );
-	update_option( 'milieus_audit_table_version', MILIEUS_AUDIT_TABLE_VERSION );
+	$exists = (bool) $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $table ) );
+	$wpdb->suppress_errors( false );
+	if ( $exists ) {
+		update_option( 'milieus_audit_table_version', MILIEUS_AUDIT_TABLE_VERSION );
+		delete_option( 'milieus_audit_install_failed' );
+		return true;
+	}
+	update_option( 'milieus_audit_install_failed', $wpdb->last_error ?: 'unknown' );
+	return false;
+}
+
+/**
+ * Show an admin notice if the audit table didn't install. The plugin still
+ * works without it — logging silently no-ops — but the user should know.
+ */
+add_action( 'admin_notices', function() {
+	$err = get_option( 'milieus_audit_install_failed' );
+	if ( ! $err || ! current_user_can( 'manage_options' ) ) return;
+	?>
+	<div class="notice notice-error is-dismissible">
+		<p><strong>Milieus:</strong> the audit log table couldn't be created. Audit + history features will be unavailable. Database error: <code><?php echo esc_html( $err ); ?></code></p>
+		<p>Most common cause: the DB user lacks <code>CREATE TABLE</code>. Grant the privilege and re-activate the plugin, or run <code>milieus_audit_install_schema()</code> from WP-CLI.</p>
+	</div>
+	<?php
+} );
+
+/**
+ * Make audit log writes safe even when the table doesn't exist.
+ */
+function milieus_audit_table_exists(): bool {
+	global $wpdb;
+	static $cache = null;
+	if ( $cache !== null ) return $cache;
+	$cache = (bool) $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", milieus_audit_table() ) );
+	return $cache;
 }
 
 function milieus_audit_log( string $event, int $user_id = 0, string $group_key = '', string $source = '', array $note = [] ): void {
+	if ( ! milieus_audit_table_exists() ) return;
 	global $wpdb;
 	$wpdb->insert( milieus_audit_table(), [
 		'ts'        => time(),

@@ -67,6 +67,7 @@ function milieus_sc_register( $atts = [] ): string {
 		<?php if ( $lede ): ?><p class="m-lede"><?php echo $h( $lede ); ?></p><?php endif; ?>
 		<form method="post" action="<?php echo esc_url( $action ); ?>" autocomplete="on">
 			<input type="hidden" name="milieus_nonce" value="<?php echo esc_attr( $nonce ); ?>">
+			<?php echo function_exists( 'milieus_honeypot_field' ) ? milieus_honeypot_field() : ''; ?>
 			<?php echo $extras_html; ?>
 			<label>Email <input type="email" name="email" required autocomplete="email"></label>
 			<label>Password <input type="password" name="password" required autocomplete="new-password" minlength="8"></label>
