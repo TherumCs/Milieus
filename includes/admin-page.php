@@ -167,8 +167,8 @@ function milieus_render_roles_page(): void {
 	?>
 	<div class="wrap"><div class="th-cx">
 		<div class="th-cx-head">
-			<h1 class="th-cx-title"><?php esc_html_e( 'Member Groups', 'milieus' ); ?></h1>
-			<p class="th-cx-sub"><?php esc_html_e( "Bundle users into groups — Friends & Family, VIP, contractors, beta testers. Each group gets its own capabilities, optional WooCommerce discount, expiry, custom registration link, and members list.", 'milieus' ); ?></p>
+			<h1 class="th-cx-title"><?php esc_html_e( 'Milieus', 'milieus' ); ?></h1>
+			<p class="th-cx-sub"><?php esc_html_e( "Membership management for WordPress by Therum. Create named groups with capabilities, WooCommerce discounts, branded registration links, expiry rules, and member directories — all from one place.", 'milieus' ); ?></p>
 		</div>
 
 		<?php
