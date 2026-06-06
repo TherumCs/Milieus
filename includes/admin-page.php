@@ -41,15 +41,7 @@ add_action( 'admin_menu', function() {
 		'milieus-roles',
 		'milieus_render_roles_page'
 	);
-	// Mirror under Users → Member Groups too, so the old URL keeps working
-	// and the wp-admin muscle memory is preserved.
-	add_users_page(
-		__( 'Member Groups', 'milieus' ),
-		__( 'Member Groups', 'milieus' ),
-		'manage_options',
-		'milieus-roles',
-		'milieus_render_roles_page'
-	);
+	// Milieus has its own top-level menu — no need to mirror under Users.
 } );
 
 add_action( 'admin_enqueue_scripts', function( $hook ) {
