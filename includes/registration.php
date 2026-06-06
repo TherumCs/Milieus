@@ -358,6 +358,12 @@ function milieus_render_bg_style( array $reg ): string {
 			$c1 = $reg['bg_grad_1'] ?: '#fde68a';
 			$c2 = $reg['bg_grad_2'] ?: '#fca5a5';
 			$dir = $reg['bg_grad_dir'] ?: '135deg';
+			// Whitelist safe gradient directions to prevent CSS injection.
+			$safe_dirs = [ '0deg', '45deg', '90deg', '135deg', '180deg', '225deg', '270deg', '315deg', 'radial' ];
+			if ( ! in_array( $dir, $safe_dirs, true ) ) $dir = '135deg';
+			// Sanitize color values — strip anything that isn't a hex/rgb/hsl pattern.
+			$c1 = preg_match( '/^[#a-zA-Z0-9(),.\s%]+$/', $c1 ) ? $c1 : '#fde68a';
+			$c2 = preg_match( '/^[#a-zA-Z0-9(),.\s%]+$/', $c2 ) ? $c2 : '#fca5a5';
 			if ( $dir === 'radial' ) {
 				return "background:radial-gradient(circle at center, {$c1}, {$c2});";
 			}
@@ -374,6 +380,8 @@ function milieus_render_bg_style( array $reg ): string {
 			return $rule;
 		case 'solid':
 		default:
-			return 'background:' . ( $reg['bg_solid'] ?: '#fafaf9' ) . ';';
+			$solid = $reg['bg_solid'] ?: '#fafaf9';
+			$solid = preg_match( '/^[#a-zA-Z0-9(),.\s%]+$/', $solid ) ? $solid : '#fafaf9';
+			return 'background:' . $solid . ';';
 	}
 }

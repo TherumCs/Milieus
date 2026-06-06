@@ -170,7 +170,11 @@ function milieus_sc_member_count( $atts = [] ): string {
 	$atts = shortcode_atts( [ 'group' => '', 'format' => 'plain' ], $atts, 'milieus_member_count' );
 	$key  = sanitize_key( $atts['group'] );
 	if ( ! milieus_get_group( $key ) ) return '0';
-	$count = (int) count_users()['avail_roles'][ $key ] ?? 0;
+	// Use the cached helper if available (rest.php), else call once.
+	$counts = function_exists( 'milieus_cached_role_counts' )
+		? milieus_cached_role_counts()
+		: ( count_users()['avail_roles'] ?? [] );
+	$count = (int) ( $counts[ $key ] ?? 0 );
 	if ( $atts['format'] === 'pretty' ) return esc_html( number_format_i18n( $count ) );
 	return (string) $count;
 }

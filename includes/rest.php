@@ -106,6 +106,18 @@ add_action( 'rest_api_init', function() {
 	] );
 } );
 
+/**
+ * Cache count_users() per request — the call scans the entire users table,
+ * so running it once per group in a loop is an N+1 on a very expensive query.
+ */
+function milieus_cached_role_counts(): array {
+	static $counts = null;
+	if ( $counts === null ) {
+		$counts = count_users()['avail_roles'] ?? [];
+	}
+	return $counts;
+}
+
 function milieus_rest_group_shape( string $key, array $g ): array {
 	return [
 		'key'             => $key,
@@ -116,6 +128,6 @@ function milieus_rest_group_shape( string $key, array $g ): array {
 		'expires_at'      => (int) ( $g['expires_at'] ?? 0 ),
 		'member_duration' => $g['member_duration'] ?? [ 'value' => 0, 'unit' => 'days' ],
 		'reg'             => wp_parse_args( $g['reg'] ?? [], milieus_reg_defaults() ),
-		'member_count'    => (int) ( count_users()['avail_roles'][ $key ] ?? 0 ),
+		'member_count'    => (int) ( milieus_cached_role_counts()[ $key ] ?? 0 ),
 	];
 }

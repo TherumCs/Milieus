@@ -223,7 +223,7 @@ function milieus_render_audit_page(): void {
 				<input type="hidden" name="page" value="milieus-audit">
 				<select name="event" class="th-input"><option value=""><?php esc_html_e( 'All events', 'milieus' ); ?></option><?php foreach ( $events as $e ): ?><option value="<?php echo esc_attr( $e ); ?>" <?php selected( $filter_event, $e ); ?>><?php echo esc_html( $e ); ?></option><?php endforeach; ?></select>
 				<select name="group" class="th-input"><option value=""><?php esc_html_e( 'All groups', 'milieus' ); ?></option><?php foreach ( $groups as $k => $g ): ?><option value="<?php echo esc_attr( $k ); ?>" <?php selected( $filter_group, $k ); ?>><?php echo esc_html( $g['name'] ); ?></option><?php endforeach; ?></select>
-				<input type="number" class="th-input" name="user" placeholder="User ID" value="<?php echo $filter_user ?: ''; ?>" style="width:130px">
+				<input type="number" class="th-input" name="user" placeholder="User ID" value="<?php echo esc_attr( $filter_user ?: '' ); ?>" style="width:130px">
 				<button class="th-button"><?php esc_html_e( 'Filter', 'milieus' ); ?></button>
 				<a class="th-link-btn" href="<?php echo esc_url( admin_url( 'admin.php?page=milieus-audit' ) ); ?>"><?php esc_html_e( 'Reset', 'milieus' ); ?></a>
 			</form>

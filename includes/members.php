@@ -197,7 +197,7 @@ add_action( 'admin_post_milieus_members_export', function() {
 	$group = milieus_get_group( $key );
 	if ( ! $group ) wp_die( 'unknown group' );
 
-	$users = get_users( [ 'role' => $key, 'orderby' => 'registered', 'order' => 'DESC' ] );
+	$users = get_users( [ 'role' => $key, 'orderby' => 'registered', 'order' => 'DESC', 'number' => 10000 ] );
 
 	nocache_headers();
 	header( 'Content-Type: text/csv; charset=utf-8' );

@@ -4,7 +4,7 @@ Tags: roles, capabilities, user management, woocommerce, pricing
 Requires at least: 6.4
 Tested up to: 6.7
 Requires PHP: 8.0
-Stable tag: 1.3.1
+Stable tag: 1.3.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,6 +69,13 @@ It's applied as a negative cart fee on `woocommerce_cart_calculate_fees`, so it 
 Milieus restores core administrator caps on every admin page load. It's there to prevent third-party tools from accidentally locking you out of wp-admin. To turn it off, set `MILIEUS_DISABLE_CAPS_HEAL` to `true` in `wp-config.php`.
 
 == Changelog ==
+
+= 1.3.2 =
+* Security: whitelist gradient direction values in registration page background to prevent CSS injection.
+* Security: sanitize solid/gradient color values with strict character allowlist.
+* Security: add `esc_attr()` on audit filter user input in HTML attribute context.
+* Performance: cache `count_users()` per request — fixes N+1 full-table scan in REST API and shortcodes.
+* Performance: cap CSV member export to 10,000 rows to prevent unbounded memory usage.
 
 = 1.3.1 =
 * Fix: welcome screen no longer shows for approval-gated signups (user isn't logged in yet, so "you're in!" would be incorrect).
