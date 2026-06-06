@@ -28,6 +28,7 @@ require_once MILIEUS_DIR . 'includes/registration.php';
 require_once MILIEUS_DIR . 'includes/ajax.php';
 require_once MILIEUS_DIR . 'includes/admin-caps-heal.php';
 require_once MILIEUS_DIR . 'includes/wc-pricing.php';
+require_once MILIEUS_DIR . 'includes/wc-auto-group.php';
 require_once MILIEUS_DIR . 'includes/admin-page.php';
 require_once MILIEUS_DIR . 'includes/approvals.php';
 require_once MILIEUS_DIR . 'includes/dashboard-widget.php';
