@@ -30,6 +30,7 @@ require_once MILIEUS_DIR . 'includes/admin-caps-heal.php';
 require_once MILIEUS_DIR . 'includes/wc-pricing.php';
 require_once MILIEUS_DIR . 'includes/wc-auto-group.php';
 require_once MILIEUS_DIR . 'includes/wc-compat.php';
+require_once MILIEUS_DIR . 'includes/wc-subscriptions.php';
 require_once MILIEUS_DIR . 'includes/spam.php';
 require_once MILIEUS_DIR . 'includes/admin-page.php';
 require_once MILIEUS_DIR . 'includes/approvals.php';
