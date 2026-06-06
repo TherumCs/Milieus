@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<ruleset name="Milieus by Therum">
+    <description>WordPress coding standards + PHP 8 compat for Milieus.</description>
+
+    <file>./milieus.php</file>
+    <file>./uninstall.php</file>
+    <file>./includes</file>
+
+    <exclude-pattern>./vendor/</exclude-pattern>
+    <exclude-pattern>./tests/</exclude-pattern>
+    <exclude-pattern>./node_modules/</exclude-pattern>
+    <exclude-pattern>./assets/</exclude-pattern>
+
+    <arg name="extensions" value="php"/>
+    <arg name="colors"/>
+    <arg value="sp"/>
+
+    <!-- WordPress-Extra includes core, docs, and extras (excluding VIP-specific). -->
+    <rule ref="WordPress-Extra">
+        <!-- Allow short array syntax (we use [] throughout). -->
+        <exclude name="Generic.Arrays.DisallowShortArraySyntax"/>
+        <!-- The plugin uses arrow functions and PHP 8 features intentionally. -->
+        <exclude name="WordPress.PHP.DisallowShortTernary"/>
+        <!-- We use sprintf/wp_kses for output safety; don't need every echo escaped inline. -->
+        <exclude name="WordPress.Security.EscapeOutput.OutputNotEscaped"/>
+        <!-- Yoda conditions are jarring; allow normal ones. -->
+        <exclude name="WordPress.PHP.YodaConditions.NotYoda"/>
+    </rule>
+
+    <!-- Internationalisation: ensure all user-facing strings use our textdomain. -->
+    <rule ref="WordPress.WP.I18n">
+        <properties>
+            <property name="text_domain" type="array" value="milieus"/>
+        </properties>
+    </rule>
+
+    <!-- PHP 8.0+ compatibility check. -->
+    <config name="testVersion" value="8.0-"/>
+    <rule ref="PHPCompatibilityWP"/>
+
+    <!-- Show progress + summary. -->
+    <arg name="report" value="summary"/>
+</ruleset>

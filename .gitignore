@@ -4,3 +4,9 @@
 # Design mockups — not part of the shipping plugin
 preview.html
 
+# Composer / PHPUnit
+/vendor/
+composer.lock
+.phpunit.result.cache
+.phpunit.cache
+

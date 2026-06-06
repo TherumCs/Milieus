@@ -1,0 +1,30 @@
+{
+    "name": "therum-studio/milieus",
+    "description": "Member groups for WordPress — bundle users into named groups with their own capabilities, discounts, expiry, and branded registration links.",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "homepage": "https://github.com/TherumCs/Milieus",
+    "authors": [
+        { "name": "Therum Creative Studios", "homepage": "https://therum.studio" }
+    ],
+    "require": {
+        "php": ">=8.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.6 || ^10.5",
+        "brain/monkey": "^2.6",
+        "wp-coding-standards/wpcs": "^3.1",
+        "dealerdirect/phpcodesniffer-composer-installer": "^1.0",
+        "phpcompatibility/phpcompatibility-wp": "^2.1"
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
+    },
+    "scripts": {
+        "test":  "phpunit",
+        "lint":  "phpcs",
+        "fix":   "phpcbf"
+    }
+}

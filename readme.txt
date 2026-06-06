@@ -4,7 +4,7 @@ Tags: roles, capabilities, user management, woocommerce, pricing
 Requires at least: 6.4
 Tested up to: 6.7
 Requires PHP: 8.0
-Stable tag: 1.2.0
+Stable tag: 1.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,6 +69,25 @@ It's applied as a negative cart fee on `woocommerce_cart_calculate_fees`, so it 
 Milieus restores core administrator caps on every admin page load. It's there to prevent third-party tools from accidentally locking you out of wp-admin. To turn it off, set `MILIEUS_DISABLE_CAPS_HEAL` to `true` in `wp-config.php`.
 
 == Changelog ==
+
+= 1.3.0 =
+* Welcome screen between sign-up and redirect (branded "you're in" page with benefit list).
+* Gutenberg block: Milieus Registration Form, with live editor preview.
+* Starter packs — Friends & Family / VIP / Beta Testers / 14-Day Trial preset templates.
+* First-activation onboarding notice with deep-link to the F&F starter.
+* Plugin row meta: Settings, Groups, Docs, Support.
+* Inline help (?) tooltips on key fields.
+* Toast notifications (replaces inline save/error text).
+* PHPUnit smoke tests + composer config + GitHub Actions CI (PHP 8.0–8.3).
+* PHPCS ruleset (WordPress-Extra + WP i18n + PHP 8 compatibility).
+* Proper README with features, install, REST/webhook docs, architecture map.
+
+= 1.2.1 =
+* HPOS + cart_checkout_blocks compatibility declaration.
+* Spam protection on /register/{slug} — honeypot + per-IP rate limit (5/hour, filterable).
+* Activation safety — audit-table install failure surfaces a dismissible admin notice instead of crashing.
+* Recurring memberships via WooCommerce Subscriptions — group binding follows subscription lifecycle; expiry pins to next-payment.
+* Translation .pot template + load_plugin_textdomain.
 
 = 1.2.0 =
 * Approval inbox, CSV import/export UI, sign-up counts, color tags, search/filter, duplicate-group, dashboard widget.
