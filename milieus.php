@@ -3,7 +3,7 @@
  * Plugin Name:       Milieus by Therum
  * Plugin URI:        https://therum.studio/plugins/milieus
  * Description:       Member groups for WordPress. Bundle users into named groups — Friends & Family, VIP, beta testers — each with their own capabilities, optional WooCommerce discount, expiry, custom registration link, and members list.
- * Version:           1.3.2
+ * Version:           1.4.0
  * Requires at least: 6.4
  * Requires PHP:      8.0
  * Author:            Therum Creative Studios
@@ -15,7 +15,7 @@
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-define( 'MILIEUS_VERSION', '1.3.2' );
+define( 'MILIEUS_VERSION', '1.4.0' );
 define( 'MILIEUS_FILE', __FILE__ );
 define( 'MILIEUS_DIR', plugin_dir_path( __FILE__ ) );
 define( 'MILIEUS_URL', plugin_dir_url( __FILE__ ) );
@@ -33,6 +33,7 @@ require_once MILIEUS_DIR . 'includes/wc-compat.php';
 require_once MILIEUS_DIR . 'includes/wc-subscriptions.php';
 require_once MILIEUS_DIR . 'includes/spam.php';
 require_once MILIEUS_DIR . 'includes/admin-page.php';
+require_once MILIEUS_DIR . 'includes/all-members.php';
 require_once MILIEUS_DIR . 'includes/approvals.php';
 require_once MILIEUS_DIR . 'includes/dashboard-widget.php';
 require_once MILIEUS_DIR . 'includes/notifications.php';

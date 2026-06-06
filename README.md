@@ -157,6 +157,7 @@ includes/
   approvals.php              — pending-user inbox
   ajax.php                   — admin AJAX handlers (save/delete/default group)
   admin-page.php             — Member Groups admin UI
+  all-members.php            — All Members directory (cross-group user view)
   admin-caps-heal.php        — restores admin caps on every admin load
   dashboard-widget.php       — wp-admin dashboard summary
   notifications.php          — email senders + Milieus → Settings page

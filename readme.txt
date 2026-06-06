@@ -4,7 +4,7 @@ Tags: roles, capabilities, user management, woocommerce, pricing
 Requires at least: 6.4
 Tested up to: 6.7
 Requires PHP: 8.0
-Stable tag: 1.3.2
+Stable tag: 1.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,6 +69,9 @@ It's applied as a negative cart fee on `woocommerce_cart_calculate_fees`, so it 
 Milieus restores core administrator caps on every admin page load. It's there to prevent third-party tools from accidentally locking you out of wp-admin. To turn it off, set `MILIEUS_DISABLE_CAPS_HEAL` to `true` in `wp-config.php`.
 
 == Changelog ==
+
+= 1.4.0 =
+* **All Members directory** — new page at Milieus → All Members showing every user on the site with their group memberships as color-coded tags. Search by name/email, filter by group, sort by name/joined/email, paginated at 50/page. Shows avatar, group tags, joined date, expiry status (color-coded urgent/soon), source, and WP role.
 
 = 1.3.2 =
 * Security: whitelist gradient direction values in registration page background to prevent CSS injection.
