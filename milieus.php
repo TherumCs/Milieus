@@ -29,6 +29,7 @@ require_once MILIEUS_DIR . 'includes/ajax.php';
 require_once MILIEUS_DIR . 'includes/admin-caps-heal.php';
 require_once MILIEUS_DIR . 'includes/wc-pricing.php';
 require_once MILIEUS_DIR . 'includes/admin-page.php';
+require_once MILIEUS_DIR . 'includes/updates.php';
 
 // Activation: schedule daily expiry sweep, flush rewrites for /register/{slug}.
 register_activation_hook( __FILE__, function() {

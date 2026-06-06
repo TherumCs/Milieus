@@ -174,6 +174,26 @@
 .th-bulk-bar strong{color:var(--ac)}
 .th-bulk-bar .spacer{flex:1}
 
+/* === Updates page === */
+.th-flash{padding:11px 14px;border-radius:var(--radius-md);margin-bottom:16px;font-size:13px;font-family:var(--f)}
+.th-flash-ok{background:color-mix(in srgb,var(--ok) 8%,transparent);color:var(--ok);border:1px solid color-mix(in srgb,var(--ok) 28%,transparent)}
+.th-flash-err{background:color-mix(in srgb,var(--err) 8%,transparent);color:var(--err);border:1px solid color-mix(in srgb,var(--err) 28%,transparent)}
+
+.th-updates-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:14px}
+.th-updates-card{background:var(--sf2);border:1px solid var(--bd);border-radius:var(--radius-lg);padding:20px 22px}
+.th-updates-card-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600;margin-bottom:8px}
+.th-updates-card-num{font:700 28px/1 var(--f);letter-spacing:-.02em;color:var(--tx)}
+.th-updates-status{font-size:11px;color:var(--tx3);margin-top:6px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+
+.th-updates-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:6px}
+.th-updates-actions form{margin:0}
+.th-updates-sectionhead{margin:24px 0 8px;font-size:13px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.06em}
+.th-updates-notes{background:var(--sf2);padding:16px 18px;border-radius:var(--radius-md);white-space:pre-wrap;font:13px/1.6 var(--f);color:var(--tx2);margin:0;max-height:360px;overflow:auto;border:1px solid var(--bd)}
+
+.th-updates-uploader{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.th-updates-uploader input[type=file]{flex:1;min-width:260px;padding:10px 12px;border:1px dashed var(--bd2);border-radius:var(--radius-md);background:var(--sf2);font:13px/1 var(--f);color:var(--tx)}
+.th-updates-help{margin:12px 0 0;font-size:12px;color:var(--tx3);line-height:1.6}
+
 /* === Actions row === */
 .th-role-actions{display:flex;gap:10px;align-items:center;justify-content:flex-end;padding-top:18px;border-top:1px solid var(--bd);margin-top:18px}
 .th-role-result{font-size:12px;margin-right:auto;color:var(--ok)}
