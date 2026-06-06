@@ -32,6 +32,7 @@ require_once MILIEUS_DIR . 'includes/wc-auto-group.php';
 require_once MILIEUS_DIR . 'includes/wc-compat.php';
 require_once MILIEUS_DIR . 'includes/wc-subscriptions.php';
 require_once MILIEUS_DIR . 'includes/spam.php';
+require_once MILIEUS_DIR . 'includes/admin-nav.php';
 require_once MILIEUS_DIR . 'includes/admin-page.php';
 require_once MILIEUS_DIR . 'includes/all-members.php';
 require_once MILIEUS_DIR . 'includes/approvals.php';

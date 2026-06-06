@@ -200,6 +200,9 @@ function milieus_render_settings_page(): void {
 			<h1 class="th-cx-title"><?php esc_html_e( 'Settings', 'milieus' ); ?></h1>
 			<p class="th-cx-sub"><?php esc_html_e( 'Email notifications for new sign-ups, welcomes, expiry reminders, and pending approvals. All sent via wp_mail() using your group\'s brand color.', 'milieus' ); ?></p>
 		</div>
+
+		<?php milieus_render_tab_nav( 'milieus-settings' ); ?>
+
 		<?php if ( $flash === 'saved' ): ?><div class="th-flash th-flash-ok">✓ Settings saved.</div><?php endif; ?>
 
 		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">

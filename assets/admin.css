@@ -17,9 +17,18 @@
   --radius-sm:6px;--radius-md:8px;--radius-lg:14px;--radius-pill:999px;
 }
 
+/* === Tab navigation === */
+.milieus-tab-nav{display:flex;gap:2px;margin-bottom:24px;border-bottom:1px solid var(--bd);padding:0 0 0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;font-family:var(--f)}
+.milieus-tab-nav::-webkit-scrollbar{display:none}
+.milieus-tab-nav-item{display:inline-flex;align-items:center;gap:6px;padding:10px 14px;font-size:13px;font-weight:500;color:var(--tx2);text-decoration:none;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;transition:all var(--e);border-radius:var(--radius-sm) var(--radius-sm) 0 0}
+.milieus-tab-nav-item:hover{color:var(--tx);background:var(--sf2)}
+.milieus-tab-nav-item.is-active{color:var(--ac);border-bottom-color:var(--ac);font-weight:600}
+.milieus-tab-nav-item .dashicons{font-size:16px;width:16px;height:16px;line-height:16px}
+.milieus-tab-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:var(--radius-pill);background:var(--ac);color:#fff;font-size:11px;font-weight:700;line-height:1}
+
 /* === Page chrome === */
 .th-cx{padding:32px 32px 60px;max-width:1100px;margin:0 auto;width:100%;min-width:0;box-sizing:border-box}
-.th-cx-head{margin-bottom:28px}
+.th-cx-head{margin-bottom:6px}
 .th-cx-eyebrow{display:none}
 .th-cx-title{font-size:24px;font-weight:700;color:var(--tx);letter-spacing:-.015em;line-height:1.1;margin:0 0 6px;font-family:var(--f)}
 .th-cx-sub{font-size:14px;color:var(--tx2);margin:0;max-width:62ch;line-height:1.6;font-family:var(--f)}

@@ -218,6 +218,8 @@ function milieus_render_audit_page(): void {
 			<p class="th-cx-sub"><?php esc_html_e( 'Append-only record of every membership change — who, what, when, from where.', 'milieus' ); ?> · <code><?php echo (int) $total; ?> <?php esc_html_e( 'entries', 'milieus' ); ?></code></p>
 		</div>
 
+		<?php milieus_render_tab_nav( 'milieus-audit' ); ?>
+
 		<div class="th-settings-card">
 			<form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:0">
 				<input type="hidden" name="page" value="milieus-audit">

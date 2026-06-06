@@ -116,6 +116,8 @@ function milieus_render_approvals_page(): void {
 			<p class="th-cx-sub"><?php esc_html_e( 'Users who registered via a group with the approval gate on. Approve to add them to the group; reject to leave them as a default-role user.', 'milieus' ); ?></p>
 		</div>
 
+		<?php milieus_render_tab_nav( 'milieus-approvals' ); ?>
+
 		<?php if ( $flash === 'approved' ): ?><div class="th-flash th-flash-ok">✓ Approved.</div>
 		<?php elseif ( $flash === 'rejected' ): ?><div class="th-flash th-flash-ok">✓ Rejected — user kept on default role.</div>
 		<?php elseif ( $flash === 'bulk_approved' ): ?><div class="th-flash th-flash-ok">✓ <?php printf( esc_html__( '%d user(s) approved.', 'milieus' ), (int) ( $_GET['count'] ?? 0 ) ); ?></div>

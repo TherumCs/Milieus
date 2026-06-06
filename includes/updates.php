@@ -403,6 +403,8 @@ function milieus_render_updates_page(): void {
 			</p>
 		</div>
 
+		<?php milieus_render_tab_nav( 'milieus-updates' ); ?>
+
 		<?php if ( $error ): ?>
 			<div class="th-flash th-flash-err">✗ <?php echo esc_html( $error ); ?></div>
 		<?php elseif ( $flash === 'applied' ): ?>

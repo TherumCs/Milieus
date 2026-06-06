@@ -163,6 +163,8 @@ function milieus_render_roles_page(): void {
 			<p class="th-cx-sub"><?php esc_html_e( "Membership management for WordPress by Therum. Create named groups with capabilities, WooCommerce discounts, branded registration links, expiry rules, and member directories — all from one place.", 'milieus' ); ?></p>
 		</div>
 
+		<?php milieus_render_tab_nav( 'milieus-roles' ); ?>
+
 		<?php
 		// ── New user defaults ─────────────────────────────────────────────
 		milieus_settings_group(

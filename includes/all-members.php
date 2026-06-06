@@ -139,6 +139,8 @@ function milieus_render_all_members_page(): void {
 			<p class="th-cx-sub"><?php esc_html_e( 'Every user on this site and which Milieus groups they belong to.', 'milieus' ); ?> · <code><?php echo (int) $total; ?> <?php esc_html_e( 'users', 'milieus' ); ?></code></p>
 		</div>
 
+		<?php milieus_render_tab_nav( 'milieus-all-members' ); ?>
+
 		<!-- Filters bar -->
 		<div class="th-settings-card" style="margin-bottom:0">
 			<form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">

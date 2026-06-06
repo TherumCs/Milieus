@@ -144,6 +144,9 @@ function milieus_render_webhooks_page(): void {
 				<?php esc_html_e( 'POST events to external URLs (Zapier, Make, n8n, your own server). Each request is HMAC-signed in the X-Milieus-Signature header — verify with the secret on the receiving side.', 'milieus' ); ?>
 			</p>
 		</div>
+
+		<?php milieus_render_tab_nav( 'milieus-webhooks' ); ?>
+
 		<?php if ( $flash === 'saved' ): ?><div class="th-flash th-flash-ok">✓ Saved.</div><?php endif; ?>
 
 		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="milieus-webhooks-form">
