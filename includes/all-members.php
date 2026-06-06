@@ -52,6 +52,25 @@ add_action( 'wp_ajax_milieus_directory_remove', function() {
 	wp_send_json_success( [ 'user_id' => $uid, 'group' => $key ] );
 } );
 
+// ── AJAX: delete user ──────────────────────────────────────────────────
+add_action( 'wp_ajax_milieus_directory_delete', function() {
+	if ( ! current_user_can( 'delete_users' ) ) wp_send_json_error( 'forbidden', 403 );
+	check_ajax_referer( 'milieus_directory', 'nonce' );
+	$uid = (int) ( $_POST['user_id'] ?? 0 );
+	if ( ! $uid ) wp_send_json_error( 'missing user_id' );
+
+	// Never allow deleting yourself.
+	if ( $uid === get_current_user_id() ) {
+		wp_send_json_error( 'cannot delete yourself' );
+	}
+
+	require_once ABSPATH . 'wp-admin/includes/user.php';
+	if ( wp_delete_user( $uid ) ) {
+		wp_send_json_success( [ 'user_id' => $uid ] );
+	}
+	wp_send_json_error( 'delete failed' );
+} );
+
 function milieus_render_all_members_page(): void {
 	if ( ! current_user_can( 'manage_options' ) ) wp_die( 'forbidden', 403 );
 
@@ -181,6 +200,9 @@ function milieus_render_all_members_page(): void {
 						</button>
 					<?php endforeach; ?>
 				</div>
+			</div>
+			<div style="margin-left:auto">
+				<button type="button" class="th-button" id="md-bulk-delete-btn" style="color:var(--err);border-color:color-mix(in srgb,var(--err) 30%,transparent)"><?php esc_html_e( 'Delete selected', 'milieus' ); ?></button>
 			</div>
 		</div>
 
@@ -489,6 +511,36 @@ function milieus_render_all_members_page(): void {
 				});
 			});
 		});
+
+		// Bulk delete
+		var bulkDeleteBtn = document.getElementById('md-bulk-delete-btn');
+		if (bulkDeleteBtn) {
+			bulkDeleteBtn.addEventListener('click', function() {
+				var ids = getCheckedIds();
+				if (!ids.length) return;
+				var currentUserId = <?php echo wp_json_encode( (string) get_current_user_id() ); ?>;
+				// Filter out current user from selection.
+				ids = ids.filter(function(id) { return id !== currentUserId; });
+				if (!ids.length) {
+					alert(<?php echo wp_json_encode( __( 'You cannot delete your own account.', 'milieus' ) ); ?>);
+					return;
+				}
+				if (!confirm(<?php echo wp_json_encode( __( 'Permanently delete ', 'milieus' ) ); ?> + ids.length + <?php echo wp_json_encode( __( ' user(s)? This cannot be undone.', 'milieus' ) ); ?>)) return;
+				bulkDeleteBtn.textContent = <?php echo wp_json_encode( __( 'Deleting…', 'milieus' ) ); ?>;
+				bulkDeleteBtn.disabled = true;
+				var done = 0, failed = 0;
+				ids.forEach(function(uid) {
+					post('milieus_directory_delete', { user_id: uid }, function(r) {
+						done++;
+						if (!r || !r.success) failed++;
+						if (done >= ids.length) {
+							if (failed > 0) alert(failed + <?php echo wp_json_encode( __( ' user(s) could not be deleted.', 'milieus' ) ); ?>);
+							location.reload();
+						}
+					});
+				});
+			});
+		}
 	})();
 	</script>
 	<?php
