@@ -112,7 +112,11 @@ add_action( 'milieus_member_assigned', function( $uid, $key, $source, $is_new ) 
 }, 10, 4 );
 
 add_action( 'milieus_member_revoked', function( $uid, $key ) {
-	milieus_audit_log( 'member.revoked', (int) $uid, (string) $key, did_action( 'milieus_expire_sweep' ) ? 'cron' : 'admin' );
+	// `doing_action` checks what's CURRENTLY executing — `did_action` returns
+	// the count of times it ever fired in this request, which would
+	// misattribute admin-initiated revokes that happen after a cron run.
+	$source = ( function_exists( 'doing_action' ) && doing_action( 'milieus_expire_sweep' ) ) ? 'cron' : 'admin';
+	milieus_audit_log( 'member.revoked', (int) $uid, (string) $key, $source );
 }, 10, 2 );
 
 add_action( 'milieus_pending_created', function( $uid, $key ) {
@@ -222,11 +226,11 @@ function milieus_render_audit_page(): void {
 				<input type="number" class="th-input" name="user" placeholder="User ID" value="<?php echo $filter_user ?: ''; ?>" style="width:130px">
 				<button class="th-button"><?php esc_html_e( 'Filter', 'milieus' ); ?></button>
 				<a class="th-link-btn" href="<?php echo esc_url( admin_url( 'admin.php?page=milieus-audit' ) ); ?>"><?php esc_html_e( 'Reset', 'milieus' ); ?></a>
-				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="margin-left:auto">
-					<input type="hidden" name="action" value="milieus_audit_export">
-					<?php wp_nonce_field( 'milieus_audit' ); ?>
-					<button class="th-button">⤓ <?php esc_html_e( 'Export CSV', 'milieus' ); ?></button>
-				</form>
+			</form>
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline;margin-left:auto">
+				<input type="hidden" name="action" value="milieus_audit_export">
+				<?php wp_nonce_field( 'milieus_audit' ); ?>
+				<button class="th-button">⤓ <?php esc_html_e( 'Export CSV', 'milieus' ); ?></button>
 			</form>
 		</div>
 

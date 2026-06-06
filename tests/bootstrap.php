@@ -27,8 +27,8 @@ if ( ! defined( 'MILIEUS_FILE' ) )     define( 'MILIEUS_FILE', __DIR__ . '/../mi
 if ( ! defined( 'MILIEUS_DIR' ) )      define( 'MILIEUS_DIR', __DIR__ . '/../' );
 if ( ! defined( 'MILIEUS_URL' ) )      define( 'MILIEUS_URL', 'https://example.com/milieus/' );
 
-// Set up Brain Monkey for each test
-\Brain\Monkey\setUp();
+// Brain Monkey is initialised per-test in TestCase::setUp() / tearDown() —
+// NOT at bootstrap, which leaks state across tests.
 
 // Stub the wp_parse_args / apply_filters / add_filter / etc. before include.
 require_once __DIR__ . '/wp-stubs.php';

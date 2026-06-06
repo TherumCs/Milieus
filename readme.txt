@@ -4,7 +4,7 @@ Tags: roles, capabilities, user management, woocommerce, pricing
 Requires at least: 6.4
 Tested up to: 6.7
 Requires PHP: 8.0
-Stable tag: 1.3.0
+Stable tag: 1.3.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,6 +69,13 @@ It's applied as a negative cart fee on `woocommerce_cart_calculate_fees`, so it 
 Milieus restores core administrator caps on every admin page load. It's there to prevent third-party tools from accidentally locking you out of wp-admin. To turn it off, set `MILIEUS_DISABLE_CAPS_HEAL` to `true` in `wp-config.php`.
 
 == Changelog ==
+
+= 1.3.1 =
+* Fix: welcome screen no longer shows for approval-gated signups (user isn't logged in yet, so "you're in!" would be incorrect).
+* Fix: audit log source attribution uses `doing_action()` instead of `did_action()` — admin-initiated revokes after a cron run in the same request are no longer misattributed as 'cron'.
+* Fix: approval badge count query used wrong WP_User_Query parameter (`compare` → `meta_query`), causing incorrect badge numbers.
+* Fix: audit log CSV export form was nested inside the filter form (invalid HTML), breaking the export button in most browsers.
+* Fix: Brain Monkey test bootstrap no longer leaks setUp state across tests.
 
 = 1.3.0 =
 * Welcome screen between sign-up and redirect (branded "you're in" page with benefit list).

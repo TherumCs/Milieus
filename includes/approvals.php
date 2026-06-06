@@ -31,11 +31,11 @@ add_action( 'admin_menu', function() {
 
 function milieus_pending_count(): int {
 	$q = new WP_User_Query( [
-		'meta_key'   => MILIEUS_PENDING_KEY,
-		'meta_value' => '',
-		'compare'    => '!=',
-		'fields'     => 'ID',
-		'number'     => 1,
+		'meta_query' => [
+			[ 'key' => MILIEUS_PENDING_KEY, 'compare' => 'EXISTS' ],
+		],
+		'fields' => 'ID',
+		'number' => 1,
 	] );
 	return (int) $q->get_total();
 }

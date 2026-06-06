@@ -30,10 +30,12 @@ add_action( 'template_redirect', 'milieus_handle_welcome' );
  */
 function milieus_welcome_redirect_for( array $group ): ?string {
 	if ( empty( $group['reg']['welcome_enabled'] ) ) return null;
+	// Approval-gated signups don't auto-login, so get_current_user_id() === 0.
+	// Sending them to /welcome/{slug} would just bounce back to home (they're
+	// not in the group yet, so the "you're in!" page is a lie). Bail.
 	$uid = get_current_user_id();
-	if ( $uid ) {
-		update_user_meta( $uid, MILIEUS_WELCOME_FLAG . $group['key'], time() );
-	}
+	if ( ! $uid ) return null;
+	update_user_meta( $uid, MILIEUS_WELCOME_FLAG . $group['key'], time() );
 	return home_url( '/welcome/' . $group['reg']['slug'] );
 }
 
