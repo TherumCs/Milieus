@@ -86,9 +86,12 @@ add_action( 'wp_ajax_milieus_role_save', function() {
 		$reg['bg_blur']      = ! empty( $r['bg_blur'] );
 	}
 
+	$color = milieus_sanitize_hex( $_POST['color'] ?? '' ) ?: ( $existing['color'] ?? '#2563eb' );
+
 	milieus_save_group( $key, [
 		'key'             => $key,
 		'name'            => $name,
+		'color'           => $color,
 		'bundles'         => $bundles,
 		'caps'            => array_keys( $cap_set ),
 		'discount'        => $discount,

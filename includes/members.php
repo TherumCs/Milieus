@@ -184,3 +184,76 @@ add_action( 'wp_ajax_milieus_members_csv', function() {
 	}
 	wp_send_json_success( [ 'added' => $added, 'skipped' => $skipped ] );
 } );
+
+/**
+ * Stream all members of a group as a CSV download. Not AJAX — uses
+ * admin-post.php so the browser saves the file directly.
+ */
+add_action( 'admin_post_milieus_members_export', function() {
+	if ( ! current_user_can( 'manage_options' ) ) wp_die( 'forbidden', 403 );
+	check_admin_referer( 'milieus_members_export' );
+
+	$key = sanitize_key( $_GET['key'] ?? '' );
+	$group = milieus_get_group( $key );
+	if ( ! $group ) wp_die( 'unknown group' );
+
+	$users = get_users( [ 'role' => $key, 'orderby' => 'registered', 'order' => 'DESC' ] );
+
+	nocache_headers();
+	header( 'Content-Type: text/csv; charset=utf-8' );
+	header( 'Content-Disposition: attachment; filename="milieus-' . $key . '-' . gmdate( 'Ymd' ) . '.csv"' );
+
+	$out = fopen( 'php://output', 'w' );
+	fputcsv( $out, [ 'email', 'name', 'joined_at', 'expires_at', 'source' ] );
+	foreach ( $users as $u ) {
+		$assigned = (int) get_user_meta( $u->ID, MILIEUS_META_ASSIGNED . $key, true );
+		$expires  = (int) get_user_meta( $u->ID, MILIEUS_META_EXPIRES  . $key, true );
+		$source   = (string) get_user_meta( $u->ID, MILIEUS_META_SOURCE . $key, true ) ?: 'manual';
+		fputcsv( $out, [
+			$u->user_email,
+			$u->display_name ?: $u->user_login,
+			$assigned ? gmdate( 'Y-m-d H:i:s', $assigned ) : '',
+			$expires  ? gmdate( 'Y-m-d H:i:s', $expires )  : '',
+			$source,
+		] );
+	}
+	fclose( $out );
+	exit;
+} );
+
+/**
+ * Duplicate a group with a "(copy)" suffix on the name. Keeps everything
+ * except registration slug (would collide) and signup count.
+ */
+add_action( 'wp_ajax_milieus_group_duplicate', function() {
+	if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( 'forbidden', 403 );
+	check_ajax_referer( 'milieus_role', 'nonce' );
+
+	$src_key = sanitize_key( $_POST['key'] ?? '' );
+	$src = milieus_get_group( $src_key );
+	if ( ! $src ) wp_send_json_error( 'unknown group' );
+
+	$new_name = $src['name'] . ' (copy)';
+	$new_key  = sanitize_key( $src_key . '_copy' );
+	global $wp_roles;
+	if ( ! $wp_roles ) $wp_roles = wp_roles();
+	$base = $new_key; $i = 2;
+	while ( isset( $wp_roles->roles[ $new_key ] ) ) {
+		$new_key = $base . '_' . $i; $i++;
+	}
+
+	$caps = [];
+	foreach ( $src['caps'] as $c ) $caps[ $c ] = true;
+	add_role( $new_key, $new_name, $caps );
+
+	$copy = $src;
+	$copy['key']  = $new_key;
+	$copy['name'] = $new_name;
+	$copy['reg']['slug']         = ''; // can't share a slug
+	$copy['reg']['enabled']      = false;
+	$copy['reg']['signup_count'] = 0;
+	$copy['updated']             = time();
+	milieus_save_group( $new_key, $copy );
+
+	wp_send_json_success( [ 'key' => $new_key, 'name' => $new_name ] );
+} );

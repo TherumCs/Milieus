@@ -68,6 +68,7 @@ function milieus_group_defaults(): array {
 	return [
 		'key'             => '',
 		'name'            => '',
+		'color'           => '#2563eb', // color tag shown as a dot in the groups table
 		'bundles'         => [],
 		'caps'            => [],
 		'discount'        => 0.0,

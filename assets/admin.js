@@ -117,9 +117,22 @@
 		applyPreview();
 		applyBg();
 
+		// Color tag
+		var color = (role && role.color) || '#2563eb';
+		setVal('[data-role-color]', color);
+		setVal('[data-role-color-hex]', color);
+
 		$('[data-role-delete]').hidden = isNew;
+		$('[data-role-duplicate]').hidden = isNew;
 		membersSection.hidden = isNew;
-		if (!isNew) loadMembers();
+		if (!isNew) {
+			loadMembers();
+			// Export link: build the URL pointing to admin-post.php
+			var exp = $('[data-export-link]');
+			if (exp) exp.href = (window.MilieusExportBase || '/wp-admin/admin-post.php')
+				+ '?action=milieus_members_export&key=' + encodeURIComponent(role.key)
+				+ '&_wpnonce=' + encodeURIComponent(window.MilieusExportNonce || '');
+		}
 
 		editor.scrollIntoView({ behavior: 'smooth', block: 'start' });
 	}
@@ -245,6 +258,7 @@
 		});
 	}
 	bindColor('[data-reg-color]', '[data-reg-color-hex]');
+	bindColor('[data-role-color]', '[data-role-color-hex]');
 
 	// ── Background ─────────────────────────────────────────────────────
 	function activeBgKind() {
@@ -296,6 +310,7 @@
 		fd.append('name',     val('[data-role-name]'));
 		fd.append('is_new',   val('[data-role-is-new]'));
 		fd.append('discount', val('[data-role-discount]'));
+		fd.append('color',    val('[data-role-color-hex]'));
 
 		$$('[data-bundle]:checked').forEach(function(c) { fd.append('bundles[]', c.value); });
 		$$('[data-cap]:checked').forEach(function(c) { fd.append('caps[]', c.value); });
@@ -550,6 +565,74 @@
 		fetch(AJAX, { method: 'POST', credentials: 'same-origin', body: fd })
 			.then(function(r) { return r.json(); })
 			.then(function() { loadMembers(); });
+	}
+
+	// ── Groups overview search filter ──────────────────────────────────
+	var groupsSearch = document.querySelector('[data-groups-search]');
+	if (groupsSearch) {
+		groupsSearch.addEventListener('input', function() {
+			var q = groupsSearch.value.trim().toLowerCase();
+			document.querySelectorAll('[data-row-search]').forEach(function(tr) {
+				var hay = tr.getAttribute('data-row-search') || '';
+				tr.style.display = (!q || hay.indexOf(q) >= 0) ? '' : 'none';
+			});
+		});
+	}
+
+	// ── Duplicate group ────────────────────────────────────────────────
+	var dupBtn = $('[data-role-duplicate]');
+	if (dupBtn) {
+		dupBtn.addEventListener('click', function() {
+			var key = val('[data-role-key]');
+			if (!key) return;
+			if (!confirm('Duplicate this group? The copy will have the same caps, expiry, and design — but its own slug.')) return;
+			var fd = new FormData();
+			fd.append('action', 'milieus_group_duplicate');
+			fd.append('nonce', nonce);
+			fd.append('key', key);
+			resultEl.textContent = 'Duplicating…';
+			fetch(AJAX, { method: 'POST', credentials: 'same-origin', body: fd })
+				.then(function(r) { return r.json(); })
+				.then(function(j) {
+					if (j && j.success) {
+						resultEl.textContent = '✓ Duplicated as "' + j.data.name + '"';
+						resultEl.style.color = 'var(--ok,#16a34a)';
+						setTimeout(function() { location.reload(); }, 800);
+					} else {
+						resultEl.textContent = '✗ ' + ((j && j.data) || 'Failed');
+						resultEl.style.color = 'var(--err,#dc2626)';
+					}
+				});
+		});
+	}
+
+	// ── CSV import panel ───────────────────────────────────────────────
+	var csvToggle = $('[data-csv-toggle]'), csvPanel = $('[data-csv-panel]'),
+	    csvBlob = $('[data-csv-blob]'), csvCancel = $('[data-csv-cancel]'),
+	    csvImport = $('[data-csv-import]'), csvResult = $('[data-csv-result]');
+	if (csvToggle && csvPanel) {
+		csvToggle.addEventListener('click', function() { csvPanel.hidden = !csvPanel.hidden; });
+		csvCancel.addEventListener('click', function() { csvPanel.hidden = true; csvBlob.value = ''; csvResult.textContent = ''; });
+		csvImport.addEventListener('click', function() {
+			if (!csvBlob.value.trim()) return;
+			var fd = new FormData();
+			fd.append('action', 'milieus_members_csv');
+			fd.append('nonce', membersNonce);
+			fd.append('key', currentKey);
+			fd.append('csv', csvBlob.value);
+			csvResult.textContent = 'Importing…';
+			fetch(AJAX, { method: 'POST', credentials: 'same-origin', body: fd })
+				.then(function(r) { return r.json(); })
+				.then(function(j) {
+					if (j && j.success) {
+						csvResult.textContent = '✓ Added ' + j.data.added + ', skipped ' + j.data.skipped;
+						csvBlob.value = '';
+						loadMembers();
+					} else {
+						csvResult.textContent = '✗ ' + ((j && j.data) || 'Failed');
+					}
+				});
+		});
 	}
 
 	// ── Auto-saving select (default group) ─────────────────────────────

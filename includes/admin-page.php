@@ -195,6 +195,9 @@ function milieus_render_roles_page(): void {
 			__( "System groups (WordPress built-ins) and any custom groups you've created.", 'milieus' ),
 			function() use ( $wp_roles, $counts, $custom, $woo_active ) {
 				?>
+				<div class="th-table-toolbar">
+					<input type="text" class="th-input" data-groups-search placeholder="<?php esc_attr_e( 'Filter groups…', 'milieus' ); ?>" style="max-width:280px">
+				</div>
 				<table class="th-roles-table">
 					<thead>
 						<tr>
@@ -207,7 +210,7 @@ function milieus_render_roles_page(): void {
 							<th style="width:70px;text-align:right;"></th>
 						</tr>
 					</thead>
-					<tbody>
+					<tbody data-groups-tbody>
 						<?php foreach ( $wp_roles->roles as $key => $role ):
 							$cap_summary = [];
 							if ( ! empty( $role['capabilities']['manage_options'] ) )      $cap_summary[] = __( 'Settings', 'milieus' );
@@ -220,9 +223,12 @@ function milieus_render_roles_page(): void {
 							$g         = $is_custom ? $custom[ $key ] : null;
 							$discount  = $is_custom ? (float) ( $g['discount'] ?? 0 ) : 0;
 							$reg_slug  = $is_custom && ! empty( $g['reg']['enabled'] ) ? ( $g['reg']['slug'] ?? '' ) : '';
+							$color     = $is_custom ? ( $g['color'] ?? '#2563eb' ) : '#a8a29e';
+							$signups   = $is_custom ? (int) ( $g['reg']['signup_count'] ?? 0 ) : 0;
 						?>
-						<tr data-role-row="<?php echo esc_attr( $key ); ?>">
+						<tr data-role-row="<?php echo esc_attr( $key ); ?>" data-row-search="<?php echo esc_attr( strtolower( $role['name'] . ' ' . $key . ' ' . $reg_slug ) ); ?>">
 							<td>
+								<span class="th-color-dot" style="background:<?php echo esc_attr( $color ); ?>"></span>
 								<strong><?php echo esc_html( $role['name'] ); ?></strong>
 								<?php if ( $discount > 0 ): ?>
 									<span class="th-pill">−<?php echo esc_html( rtrim( rtrim( number_format( $discount, 2 ), '0' ), '.' ) ); ?>% off</span>
@@ -233,6 +239,12 @@ function milieus_render_roles_page(): void {
 							<td>
 								<?php if ( $reg_slug ): ?>
 									<code style="font-size:11px;color:var(--ac);"><?php echo esc_html( '/register/' . $reg_slug ); ?></code>
+									<?php if ( $signups > 0 ): ?>
+										<br><small class="th-roles-caps"><?php
+											/* translators: %d: count */
+											printf( esc_html( _n( '%d sign-up', '%d sign-ups', $signups, 'milieus' ) ), $signups );
+										?></small>
+									<?php endif; ?>
 								<?php else: ?>
 									<span class="th-roles-caps">—</span>
 								<?php endif; ?>
@@ -282,6 +294,15 @@ function milieus_render_roles_page(): void {
 							<label><?php esc_html_e( 'Group name', 'milieus' ); ?></label>
 							<input type="text" class="th-input" data-role-name placeholder="<?php esc_attr_e( 'Friends & Family', 'milieus' ); ?>" maxlength="60">
 							<small><?php esc_html_e( 'Display name shown to admins and members. The internal key is auto-generated.', 'milieus' ); ?></small>
+						</div>
+
+						<div class="th-role-field">
+							<label><?php esc_html_e( 'Color tag', 'milieus' ); ?></label>
+							<small><?php esc_html_e( 'Shown as a dot next to the group name throughout the admin. Helpful when you have many groups.', 'milieus' ); ?></small>
+							<div class="th-color-row" style="max-width:200px">
+								<input type="color" data-role-color value="#2563eb">
+								<input type="text" class="th-input" data-role-color-hex value="#2563eb" style="font-family:ui-monospace,Menlo,monospace">
+							</div>
 						</div>
 
 						<div class="th-role-field">
@@ -479,6 +500,18 @@ function milieus_render_roles_page(): void {
 									<input type="text" data-member-search placeholder="<?php esc_attr_e( 'Search users by name or email…', 'milieus' ); ?>" autocomplete="off">
 									<div class="th-member-search-results" data-member-search-results hidden></div>
 								</div>
+								<a class="th-button" data-export-link href="#"><?php esc_html_e( '⤓ Export CSV', 'milieus' ); ?></a>
+								<button type="button" class="th-button" data-csv-toggle><?php esc_html_e( '⤒ Import CSV', 'milieus' ); ?></button>
+							</div>
+
+							<div class="th-csv-panel" data-csv-panel hidden>
+								<small style="display:block;margin-bottom:6px;color:var(--tx3)"><?php esc_html_e( 'Paste a list of emails (one per line, or comma-separated). Existing users are added to this group with the default member duration. Emails without a matching user are skipped.', 'milieus' ); ?></small>
+								<textarea class="th-input" data-csv-blob rows="5" style="width:100%;font-family:ui-monospace,Menlo,monospace;font-size:12px" placeholder="ada@example.com&#10;grace@example.com&#10;…"></textarea>
+								<div style="display:flex;gap:8px;margin-top:8px">
+									<button type="button" class="th-button th-button-primary" data-csv-import><?php esc_html_e( 'Import', 'milieus' ); ?></button>
+									<button type="button" class="th-button" data-csv-cancel><?php esc_html_e( 'Cancel', 'milieus' ); ?></button>
+									<span data-csv-result style="font-size:12px;color:var(--tx2);align-self:center"></span>
+								</div>
 							</div>
 
 							<div class="th-bulk-bar" data-bulk-bar hidden>
@@ -508,6 +541,7 @@ function milieus_render_roles_page(): void {
 
 						<div class="th-role-actions">
 							<span class="th-role-result" data-role-result></span>
+							<button type="button" class="th-button" data-role-duplicate hidden><?php esc_html_e( 'Duplicate', 'milieus' ); ?></button>
 							<button type="button" class="th-button" data-role-cancel><?php esc_html_e( 'Cancel', 'milieus' ); ?></button>
 							<button type="button" class="th-button" data-role-delete style="color:var(--err)" hidden><?php esc_html_e( 'Delete group', 'milieus' ); ?></button>
 							<button type="button" class="th-button th-button-primary" data-role-save><?php esc_html_e( 'Save group', 'milieus' ); ?></button>
@@ -521,6 +555,7 @@ function milieus_render_roles_page(): void {
 					$roles_payload[ $k ] = [
 						'key'             => $k,
 						'name'            => $r['name'] ?? $k,
+						'color'           => $r['color'] ?? '#2563eb',
 						'bundles'         => $r['bundles'] ?? [],
 						'caps'            => $r['caps'] ?? [],
 						'discount'        => (float) ( $r['discount'] ?? 0 ),
@@ -534,6 +569,8 @@ function milieus_render_roles_page(): void {
 					window.MilieusRoles = <?php echo wp_json_encode( $roles_payload ); ?>;
 					window.MilieusAjax  = <?php echo wp_json_encode( admin_url( 'admin-ajax.php' ) ); ?>;
 					window.MilieusSiteUrl = <?php echo wp_json_encode( $site_url ); ?>;
+					window.MilieusExportBase = <?php echo wp_json_encode( admin_url( 'admin-post.php' ) ); ?>;
+					window.MilieusExportNonce = <?php echo wp_json_encode( wp_create_nonce( 'milieus_members_export' ) ); ?>;
 				</script>
 				<?php
 			}
