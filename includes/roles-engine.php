@@ -106,6 +106,10 @@ function milieus_reg_defaults(): array {
 		'bg_image'     => '',
 		'bg_dim'       => true,
 		'bg_blur'      => false,
+		'welcome_enabled' => false,
+		'welcome_heading' => '',
+		'welcome_body'    => '',
+		'welcome_cta'     => '',
 	];
 }
 

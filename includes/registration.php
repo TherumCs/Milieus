@@ -174,7 +174,12 @@ function milieus_process_registration( array $group ): void {
 		wp_set_auth_cookie( $uid );
 	}
 
-	$redirect = esc_url_raw( $reg['redirect'] ?: home_url( '/' ) );
+	// Welcome page hijack — if enabled and we have a fresh user session,
+	// route through /welcome/{slug} for a one-screen "you're in" before redirect.
+	$welcome_url = function_exists( 'milieus_welcome_redirect_for' )
+		? milieus_welcome_redirect_for( $group )
+		: null;
+	$redirect = esc_url_raw( $welcome_url ?: ( $reg['redirect'] ?: home_url( '/' ) ) );
 	wp_safe_redirect( $redirect );
 	exit;
 }

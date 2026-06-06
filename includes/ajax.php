@@ -84,6 +84,10 @@ add_action( 'wp_ajax_milieus_role_save', function() {
 		$reg['bg_image']     = esc_url_raw( $r['bg_image'] ?? '' );
 		$reg['bg_dim']       = ! empty( $r['bg_dim'] );
 		$reg['bg_blur']      = ! empty( $r['bg_blur'] );
+		$reg['welcome_enabled'] = ! empty( $r['welcome_enabled'] );
+		$reg['welcome_heading'] = sanitize_text_field( $r['welcome_heading'] ?? '' );
+		$reg['welcome_body']    = wp_kses_post( $r['welcome_body'] ?? '' );
+		$reg['welcome_cta']     = sanitize_text_field( $r['welcome_cta'] ?? '' );
 	}
 
 	$color = milieus_sanitize_hex( $_POST['color'] ?? '' ) ?: ( $existing['color'] ?? '#2563eb' );

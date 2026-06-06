@@ -7,6 +7,25 @@
 	var AJAX  = window.MilieusAjax || (window.ajaxurl || '/wp-admin/admin-ajax.php');
 	var SITE_URL = window.MilieusSiteUrl || '/register/';
 
+	// ── Toast utility ──────────────────────────────────────────────────
+	var toastContainer = null;
+	function toast(msg, type) {
+		if (!toastContainer) {
+			toastContainer = document.createElement('div');
+			toastContainer.className = 'th-toasts';
+			document.body.appendChild(toastContainer);
+		}
+		var t = document.createElement('div');
+		t.className = 'th-toast th-toast-' + (type || 'ok');
+		t.textContent = msg;
+		toastContainer.appendChild(t);
+		setTimeout(function() {
+			t.classList.add('th-toast-out');
+			setTimeout(function() { t.remove(); }, 220);
+		}, 2400);
+	}
+	window.MilieusToast = toast;
+
 	var builder = document.querySelector('[data-milieus-role-builder]');
 	if (!builder) return;
 
@@ -103,6 +122,10 @@
 			var p = cb.closest('[data-reg-extra-pill]');
 			if (p) p.classList.toggle('active', cb.checked);
 		});
+		var welcome = $('[data-reg-welcome-enabled]'); if (welcome) welcome.checked = !!reg.welcome_enabled;
+		setVal('[data-reg-welcome-heading]', reg.welcome_heading || '');
+		setVal('[data-reg-welcome-body]', reg.welcome_body || '');
+		setVal('[data-reg-welcome-cta]', reg.welcome_cta || '');
 		setSeg('bg-kind', reg.bg_kind || 'solid');
 		showBgPanel(reg.bg_kind || 'solid');
 		setVal('[data-bg-solid]', reg.bg_solid || '#fafaf9');
@@ -367,6 +390,12 @@
 		fd.append('reg[bg_dim]',  $('[data-bg-dim]') && $('[data-bg-dim]').checked ? '1' : '');
 		fd.append('reg[bg_blur]', $('[data-bg-blur]') && $('[data-bg-blur]').checked ? '1' : '');
 
+		// Welcome screen
+		fd.append('reg[welcome_enabled]', $('[data-reg-welcome-enabled]') && $('[data-reg-welcome-enabled]').checked ? '1' : '');
+		fd.append('reg[welcome_heading]', val('[data-reg-welcome-heading]'));
+		fd.append('reg[welcome_body]',    val('[data-reg-welcome-body]'));
+		fd.append('reg[welcome_cta]',     val('[data-reg-welcome-cta]'));
+
 		return fd;
 	}
 
@@ -380,18 +409,18 @@
 			.then(function(j) {
 				btn.disabled = false; btn.style.opacity = '';
 				if (j && j.success) {
-					resultEl.textContent = '✓ ' + (j.data.msg || 'Saved');
-					resultEl.style.color = 'var(--ok,#16a34a)';
+					toast(j.data.msg || 'Saved', 'ok');
+					resultEl.textContent = '';
 					setTimeout(function() { location.reload(); }, 700);
 				} else {
-					resultEl.textContent = '✗ ' + ((j && j.data) || 'Failed');
-					resultEl.style.color = 'var(--err,#dc2626)';
+					toast(((j && j.data) || 'Failed'), 'err');
+					resultEl.textContent = '';
 				}
 			})
 			.catch(function() {
 				btn.disabled = false; btn.style.opacity = '';
-				resultEl.textContent = '✗ Network error';
-				resultEl.style.color = 'var(--err,#dc2626)';
+				toast('Network error', 'err');
+				resultEl.textContent = '';
 			});
 	});
 
@@ -566,6 +595,14 @@
 			.then(function(r) { return r.json(); })
 			.then(function() { loadMembers(); });
 	}
+
+	// ── Starter-pack template apply (from onboarding.php) ──────────────
+	// admin.js's openEditor() handles the field-fill logic, but it doesn't
+	// know about templates — we synthesize a fake "role" object that looks
+	// like a saved group and re-call openEditor() with it.
+	document.addEventListener('milieus:apply-template', function(e) {
+		try { openEditor(e.detail); } catch (err) { console && console.warn && console.warn('milieus template apply failed:', err); }
+	});
 
 	// ── Groups overview search filter ──────────────────────────────────
 	var groupsSearch = document.querySelector('[data-groups-search]');

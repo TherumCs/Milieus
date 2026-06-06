@@ -174,6 +174,31 @@
 .th-bulk-bar strong{color:var(--ac)}
 .th-bulk-bar .spacer{flex:1}
 
+/* === Toasts === */
+.th-toasts{position:fixed;top:48px;right:24px;z-index:99999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.th-toast{background:var(--tx);color:#fff;padding:10px 14px;border-radius:var(--radius-md);font:600 13px/1.4 var(--f);box-shadow:0 8px 24px rgba(0,0,0,.15);max-width:340px;pointer-events:auto;animation:th-toast-in .25s cubic-bezier(.2,.8,.2,1)}
+.th-toast-ok{background:var(--ok)}
+.th-toast-err{background:var(--err)}
+.th-toast-out{animation:th-toast-out .2s ease forwards}
+@keyframes th-toast-in{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+@keyframes th-toast-out{to{opacity:0;transform:translateY(-8px)}}
+
+/* === Spinners === */
+.th-spinner{display:inline-block;width:14px;height:14px;border:2px solid color-mix(in srgb,currentColor 25%,transparent);border-top-color:currentColor;border-radius:50%;animation:th-spin .8s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes th-spin{to{transform:rotate(360deg)}}
+
+/* === Inline help tooltip === */
+.th-help{display:inline-block;position:relative;margin-left:6px;vertical-align:middle;line-height:1}
+.th-help-icon{display:inline-block;width:14px;height:14px;border-radius:50%;background:var(--sf2);color:var(--tx3);text-align:center;font:700 10px/14px var(--f);cursor:help;border:1px solid var(--bd)}
+.th-help:hover .th-help-icon,.th-help:focus .th-help-icon{background:var(--ac);color:#fff;border-color:var(--ac)}
+.th-help-text{position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%);background:var(--tx);color:#fff;font:500 11px/1.4 var(--f);padding:7px 10px;border-radius:6px;white-space:normal;width:220px;text-align:center;opacity:0;pointer-events:none;transition:opacity .12s;z-index:10}
+.th-help-text::after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:var(--tx)}
+.th-help:hover .th-help-text,.th-help:focus .th-help-text{opacity:1}
+
+/* === Welcome-message editor preview === */
+.th-welcome-fields{display:grid;grid-template-columns:1fr;gap:10px}
+.th-welcome-fields textarea{min-height:80px}
+
 /* === Color dot + table toolbar + CSV panel === */
 .th-color-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;vertical-align:middle;box-shadow:0 0 0 1px rgba(0,0,0,.06)}
 .th-table-toolbar{display:flex;gap:8px;align-items:center;margin-bottom:12px}

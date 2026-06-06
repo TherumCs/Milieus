@@ -415,6 +415,13 @@ function milieus_render_roles_page(): void {
 												<span class="th-unit"><?php esc_html_e( '0 = unlimited', 'milieus' ); ?></span>
 											</div>
 										</div>
+
+										<div class="th-reg-ctrl" style="grid-template-columns:160px 1fr;border-top:1px solid var(--bd);padding-top:14px;margin-top:6px"><label><?php esc_html_e( 'Welcome screen', 'milieus' ); ?> <?php milieus_help( 'Show a confirmation screen between sign-up and the redirect — branded with your color and group benefits.' ); ?></label>
+											<label style="font-size:13px;display:flex;align-items:center;gap:6px;font-weight:500;color:var(--tx)"><input type="checkbox" data-reg-welcome-enabled> <?php esc_html_e( 'Show a one-screen "you\'re in" before redirect', 'milieus' ); ?></label>
+										</div>
+										<div class="th-reg-ctrl"><label><?php esc_html_e( 'Welcome heading', 'milieus' ); ?></label><input type="text" data-reg-welcome-heading placeholder="<?php esc_attr_e( "You're in!", 'milieus' ); ?>"></div>
+										<div class="th-reg-ctrl"><label><?php esc_html_e( 'Welcome body', 'milieus' ); ?></label><textarea data-reg-welcome-body placeholder="<?php esc_attr_e( "Here's what your membership unlocks…", 'milieus' ); ?>"></textarea></div>
+										<div class="th-reg-ctrl"><label><?php esc_html_e( 'Continue button text', 'milieus' ); ?></label><input type="text" data-reg-welcome-cta placeholder="<?php esc_attr_e( 'Continue →', 'milieus' ); ?>"></div>
 									</div>
 
 									<div>
