@@ -26,6 +26,37 @@ const MILIEUS_META_EXPIRES   = '_milieus_expires_';
 const MILIEUS_META_SOURCE    = '_milieus_source_';   // manual | link | csv | invite
 
 add_action( 'milieus_expire_sweep', 'milieus_run_expire_sweep' );
+add_action( 'milieus_expire_sweep', 'milieus_run_expiry_reminders' );
+
+/**
+ * Find memberships expiring within N days and fire an action per user/group
+ * so the notifications module (or any listener) can send a reminder. We
+ * stamp a per-(user,group) flag so each reminder fires at most once.
+ */
+function milieus_run_expiry_reminders(): int {
+	$days = (int) apply_filters( 'milieus_expiry_reminder_days', 3 );
+	if ( $days <= 0 ) return 0;
+	$until = time() + $days * DAY_IN_SECONDS;
+	$flag  = '_milieus_reminder_sent_';
+	$count = 0;
+	foreach ( milieus_get_groups() as $key => $g ) {
+		$users = get_users( [
+			'meta_query' => [
+				[ 'key' => MILIEUS_META_EXPIRES . $key, 'value' => time(), 'compare' => '>',  'type' => 'NUMERIC' ],
+				[ 'key' => MILIEUS_META_EXPIRES . $key, 'value' => $until, 'compare' => '<=', 'type' => 'NUMERIC' ],
+			],
+			'fields' => 'ID',
+		] );
+		foreach ( $users as $uid ) {
+			if ( get_user_meta( $uid, $flag . $key, true ) ) continue;
+			$expires = (int) get_user_meta( $uid, MILIEUS_META_EXPIRES . $key, true );
+			do_action( 'milieus_member_expiring_soon', (int) $uid, $key, $expires );
+			update_user_meta( $uid, $flag . $key, time() );
+			$count++;
+		}
+	}
+	return $count;
+}
 
 /**
  * Run both sweeps. Safe to call repeatedly; idempotent per role/user.
@@ -103,6 +134,7 @@ function milieus_assign_member( int $user_id, string $role_key, string $source =
 	$group = milieus_get_group( $role_key );
 	if ( ! $group ) return false;
 
+	$is_new = empty( get_user_meta( $user_id, MILIEUS_META_ASSIGNED . $role_key, true ) );
 	$u->add_role( $role_key );
 
 	$now = time();
@@ -117,6 +149,9 @@ function milieus_assign_member( int $user_id, string $role_key, string $source =
 	} else {
 		update_user_meta( $user_id, MILIEUS_META_EXPIRES . $role_key, 0 );
 	}
+
+	// Hooks for notifications / webhooks / audit log.
+	do_action( 'milieus_member_assigned', $user_id, $role_key, $source, $is_new );
 	return true;
 }
 
@@ -135,6 +170,7 @@ function milieus_revoke_member( int $user_id, string $role_key, ?string $default
 		$default = $default ?: get_option( 'default_role', 'subscriber' );
 		$u->add_role( $default );
 	}
+	do_action( 'milieus_member_revoked', $user_id, $role_key );
 	return true;
 }
 
