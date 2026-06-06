@@ -5,9 +5,8 @@
  * A single page showing every user on the site with their Milieus group
  * memberships, sortable and filterable. Lives at Milieus → All Members.
  *
- * Columns: User (name + email), Groups (color-coded tags), Joined, Expires,
- * Source, WP Role. Supports: search by name/email, filter by group, sort by
- * column, pagination.
+ * Each row has a 3-dot action menu: Add to group, Remove from group,
+ * Edit user (links to WP user editor), Delete user (with confirmation).
  */
 
 if ( ! defined( 'ABSPATH' ) ) exit;
@@ -21,7 +20,7 @@ add_action( 'admin_menu', function() {
 		'milieus-all-members',
 		'milieus_render_all_members_page'
 	);
-}, 12 ); // just after Member Groups (default 10)
+}, 12 );
 
 add_action( 'admin_enqueue_scripts', function( $hook ) {
 	if ( ! isset( $_GET['page'] ) || $_GET['page'] !== 'milieus-all-members' ) return;
@@ -31,11 +30,34 @@ add_action( 'admin_enqueue_scripts', function( $hook ) {
 	}
 } );
 
+// ── AJAX: add user to group ─────────────────────────────────────────────
+add_action( 'wp_ajax_milieus_directory_add', function() {
+	if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( 'forbidden', 403 );
+	check_ajax_referer( 'milieus_directory', 'nonce' );
+	$uid = (int) ( $_POST['user_id'] ?? 0 );
+	$key = sanitize_key( $_POST['group'] ?? '' );
+	if ( ! $uid || ! $key ) wp_send_json_error( 'missing args' );
+	if ( ! milieus_assign_member( $uid, $key, 'manual' ) ) wp_send_json_error( 'assign failed' );
+	wp_send_json_success( [ 'user_id' => $uid, 'group' => $key ] );
+} );
+
+// ── AJAX: remove user from group ────────────────────────────────────────
+add_action( 'wp_ajax_milieus_directory_remove', function() {
+	if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( 'forbidden', 403 );
+	check_ajax_referer( 'milieus_directory', 'nonce' );
+	$uid = (int) ( $_POST['user_id'] ?? 0 );
+	$key = sanitize_key( $_POST['group'] ?? '' );
+	if ( ! $uid || ! $key ) wp_send_json_error( 'missing args' );
+	milieus_revoke_member( $uid, $key );
+	wp_send_json_success( [ 'user_id' => $uid, 'group' => $key ] );
+} );
+
 function milieus_render_all_members_page(): void {
 	if ( ! current_user_can( 'manage_options' ) ) wp_die( 'forbidden', 403 );
 
 	$groups     = milieus_get_groups();
-	$group_keys = array_keys( $groups );
+	$nonce      = wp_create_nonce( 'milieus_directory' );
+	$delete_nonce_base = 'delete-user_'; // WP's built-in pattern
 
 	// ── Filters ─────────────────────────────────────────────────────────
 	$search       = sanitize_text_field( wp_unslash( $_GET['s'] ?? '' ) );
@@ -60,7 +82,6 @@ function milieus_render_all_members_page(): void {
 		$args['search_columns'] = [ 'user_login', 'user_email', 'display_name' ];
 	}
 
-	// Filter by group = filter by role.
 	if ( $filter_group && isset( $groups[ $filter_group ] ) ) {
 		$args['role'] = $filter_group;
 	}
@@ -71,7 +92,6 @@ function milieus_render_all_members_page(): void {
 	$pages = max( 1, (int) ceil( $total / $per ) );
 
 	// ── Precompute per-user group membership ────────────────────────────
-	// For each displayed user, check which Milieus groups they belong to.
 	$user_groups = [];
 	foreach ( $users as $u ) {
 		$memberships = [];
@@ -103,8 +123,14 @@ function milieus_render_all_members_page(): void {
 	};
 	$sort_icon = function( string $col ) use ( $orderby, $order ) {
 		if ( $orderby !== $col ) return '';
-		return $order === 'ASC' ? ' ▲' : ' ▼';
+		return $order === 'ASC' ? ' &#9650;' : ' &#9660;';
 	};
+
+	// Groups as JSON for the JS add-to-group picker.
+	$groups_json = [];
+	foreach ( $groups as $k => $g ) {
+		$groups_json[] = [ 'key' => $k, 'name' => $g['name'], 'color' => $g['color'] ?? '#2563eb' ];
+	}
 
 	?>
 	<div class="wrap"><div class="th-cx">
@@ -132,12 +158,12 @@ function milieus_render_all_members_page(): void {
 		<!-- Members table -->
 		<table class="th-roles-table" style="margin-top:14px">
 			<thead><tr>
-				<th style="width:260px"><a href="<?php echo esc_url( $sort_url( 'display_name' ) ); ?>" style="text-decoration:none;color:inherit"><?php esc_html_e( 'User', 'milieus' ); echo $sort_icon( 'display_name' ); ?></a></th>
+				<th style="width:260px"><a href="<?php echo esc_url( $sort_url( 'display_name' ) ); ?>" style="text-decoration:none;color:inherit"><?php esc_html_e( 'User', 'milieus' ); ?><?php echo $sort_icon( 'display_name' ); ?></a></th>
 				<th><?php esc_html_e( 'Groups', 'milieus' ); ?></th>
-				<th style="width:120px"><a href="<?php echo esc_url( $sort_url( 'registered' ) ); ?>" style="text-decoration:none;color:inherit"><?php esc_html_e( 'Joined', 'milieus' ); echo $sort_icon( 'registered' ); ?></a></th>
-				<th style="width:120px"><?php esc_html_e( 'Expires', 'milieus' ); ?></th>
-				<th style="width:100px"><?php esc_html_e( 'Source', 'milieus' ); ?></th>
-				<th style="width:120px"><a href="<?php echo esc_url( $sort_url( 'user_email' ) ); ?>" style="text-decoration:none;color:inherit"><?php esc_html_e( 'WP Role', 'milieus' ); ?></a></th>
+				<th style="width:110px"><a href="<?php echo esc_url( $sort_url( 'registered' ) ); ?>" style="text-decoration:none;color:inherit"><?php esc_html_e( 'Joined', 'milieus' ); ?><?php echo $sort_icon( 'registered' ); ?></a></th>
+				<th style="width:110px"><?php esc_html_e( 'Expires', 'milieus' ); ?></th>
+				<th style="width:100px"><?php esc_html_e( 'WP Role', 'milieus' ); ?></th>
+				<th style="width:44px"></th>
 			</tr></thead>
 			<tbody>
 				<?php if ( ! $users ): ?>
@@ -148,15 +174,19 @@ function milieus_render_all_members_page(): void {
 					$avatar = get_avatar_url( $u->ID, [ 'size' => 36 ] );
 					$wp_role = ! empty( $u->roles ) ? ucfirst( str_replace( '_', ' ', $u->roles[0] ) ) : '—';
 
-					// For Expires + Source columns, show the earliest-expiring membership.
+					// For Expires column, show the earliest-expiring membership.
 					$earliest = null;
 					foreach ( $memberships as $m ) {
 						if ( $earliest === null || ( $m['expires'] > 0 && ( $earliest['expires'] === 0 || $m['expires'] < $earliest['expires'] ) ) ) {
 							$earliest = $m;
 						}
 					}
+
+					// Groups user is NOT in (for "Add to group" submenu).
+					$membership_keys = array_column( $memberships, 'key' );
+					$available_groups = array_filter( $groups, fn( $k ) => ! in_array( $k, $membership_keys, true ), ARRAY_FILTER_USE_KEY );
 				?>
-				<tr>
+				<tr data-uid="<?php echo (int) $u->ID; ?>">
 					<td>
 						<div style="display:flex;align-items:center;gap:10px">
 							<img src="<?php echo esc_url( $avatar ); ?>" width="36" height="36" style="border-radius:50%;flex-shrink:0" alt="">
@@ -167,27 +197,22 @@ function milieus_render_all_members_page(): void {
 						</div>
 					</td>
 					<td>
-						<?php if ( $memberships ): ?>
-							<div style="display:flex;flex-wrap:wrap;gap:4px">
+						<div class="md-pills" style="display:flex;flex-wrap:wrap;gap:4px">
+							<?php if ( $memberships ): ?>
 								<?php foreach ( $memberships as $m ): ?>
-									<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:color-mix(in srgb,<?php echo esc_attr( $m['color'] ); ?> 10%,#fafaf9);border:1px solid color-mix(in srgb,<?php echo esc_attr( $m['color'] ); ?> 22%,transparent);border-radius:999px;font-size:11px;font-weight:600;color:<?php echo esc_attr( $m['color'] ); ?>">
-										<span style="width:6px;height:6px;border-radius:50%;background:<?php echo esc_attr( $m['color'] ); ?>"></span>
+									<span class="md-pill" data-group="<?php echo esc_attr( $m['key'] ); ?>" style="display:inline-flex;align-items:center;gap:5px;padding:3px 8px 3px 10px;background:color-mix(in srgb,<?php echo esc_attr( $m['color'] ); ?> 10%,#fafaf9);border:1px solid color-mix(in srgb,<?php echo esc_attr( $m['color'] ); ?> 22%,transparent);border-radius:999px;font-size:11px;font-weight:600;color:<?php echo esc_attr( $m['color'] ); ?>">
+										<span style="width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0"></span>
 										<?php echo esc_html( $m['name'] ); ?>
+										<button type="button" class="md-pill-x" data-uid="<?php echo (int) $u->ID; ?>" data-group="<?php echo esc_attr( $m['key'] ); ?>" title="<?php esc_attr_e( 'Remove from group', 'milieus' ); ?>" style="background:none;border:0;color:currentColor;cursor:pointer;font-size:13px;line-height:1;padding:0 0 0 2px;opacity:.5">&times;</button>
 									</span>
 								<?php endforeach; ?>
-							</div>
-						<?php else: ?>
-							<span style="color:var(--tx3);font-size:12px">—</span>
-						<?php endif; ?>
+							<?php else: ?>
+								<span style="color:var(--tx3);font-size:12px"><?php esc_html_e( 'No groups', 'milieus' ); ?></span>
+							<?php endif; ?>
+						</div>
 					</td>
 					<td class="th-roles-caps">
-						<?php
-						if ( $earliest ) {
-							echo esc_html( wp_date( 'M j, Y', $earliest['assigned'] ) );
-						} else {
-							echo esc_html( wp_date( 'M j, Y', strtotime( $u->user_registered ) ) );
-						}
-						?>
+						<?php echo esc_html( wp_date( 'M j, Y', strtotime( $u->user_registered ) ) ); ?>
 					</td>
 					<td>
 						<?php
@@ -207,8 +232,47 @@ function milieus_render_all_members_page(): void {
 						}
 						?>
 					</td>
-					<td class="th-roles-caps"><?php echo esc_html( $earliest['source'] ?? '—' ); ?></td>
 					<td class="th-roles-caps"><?php echo esc_html( $wp_role ); ?></td>
+					<td style="text-align:right;position:relative">
+						<button type="button" class="md-menu-btn" title="<?php esc_attr_e( 'Actions', 'milieus' ); ?>" style="background:none;border:1px solid var(--bd);border-radius:6px;width:32px;height:32px;cursor:pointer;font-size:16px;color:var(--tx2);display:inline-flex;align-items:center;justify-content:center;transition:background .1s">&middot;&middot;&middot;</button>
+						<div class="md-menu" style="display:none;position:absolute;right:0;top:36px;background:#fff;border:1px solid var(--bd);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.1);min-width:200px;z-index:50;padding:6px 0;font-size:13px">
+							<?php if ( $available_groups ): ?>
+								<div class="md-menu-sub" style="position:relative">
+									<button type="button" class="md-menu-item md-menu-sub-trigger" style="width:100%;text-align:left;background:none;border:0;padding:8px 14px;cursor:pointer;color:var(--tx);font:inherit;display:flex;justify-content:space-between;align-items:center">
+										<?php esc_html_e( 'Add to group', 'milieus' ); ?> <span style="font-size:11px;color:var(--tx3)">&#9654;</span>
+									</button>
+									<div class="md-submenu" style="display:none;position:absolute;left:100%;top:-6px;background:#fff;border:1px solid var(--bd);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.1);min-width:180px;padding:6px 0;z-index:51">
+										<?php foreach ( $available_groups as $k => $g ): ?>
+											<button type="button" class="md-menu-item md-add-group" data-uid="<?php echo (int) $u->ID; ?>" data-group="<?php echo esc_attr( $k ); ?>" style="width:100%;text-align:left;background:none;border:0;padding:8px 14px;cursor:pointer;color:var(--tx);font:inherit;display:flex;align-items:center;gap:8px">
+												<span style="width:8px;height:8px;border-radius:50%;background:<?php echo esc_attr( $g['color'] ?? '#2563eb' ); ?>;flex-shrink:0"></span>
+												<?php echo esc_html( $g['name'] ); ?>
+											</button>
+										<?php endforeach; ?>
+									</div>
+								</div>
+							<?php endif; ?>
+							<?php if ( $memberships ): ?>
+								<div class="md-menu-sub" style="position:relative">
+									<button type="button" class="md-menu-item md-menu-sub-trigger" style="width:100%;text-align:left;background:none;border:0;padding:8px 14px;cursor:pointer;color:var(--tx);font:inherit;display:flex;justify-content:space-between;align-items:center">
+										<?php esc_html_e( 'Remove from group', 'milieus' ); ?> <span style="font-size:11px;color:var(--tx3)">&#9654;</span>
+									</button>
+									<div class="md-submenu" style="display:none;position:absolute;left:100%;top:-6px;background:#fff;border:1px solid var(--bd);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.1);min-width:180px;padding:6px 0;z-index:51">
+										<?php foreach ( $memberships as $m ): ?>
+											<button type="button" class="md-menu-item md-remove-group" data-uid="<?php echo (int) $u->ID; ?>" data-group="<?php echo esc_attr( $m['key'] ); ?>" style="width:100%;text-align:left;background:none;border:0;padding:8px 14px;cursor:pointer;color:var(--tx);font:inherit;display:flex;align-items:center;gap:8px">
+												<span style="width:8px;height:8px;border-radius:50%;background:<?php echo esc_attr( $m['color'] ); ?>;flex-shrink:0"></span>
+												<?php echo esc_html( $m['name'] ); ?>
+											</button>
+										<?php endforeach; ?>
+									</div>
+								</div>
+							<?php endif; ?>
+							<div style="border-top:1px solid var(--bd);margin:4px 0"></div>
+							<a class="md-menu-item" href="<?php echo esc_url( admin_url( 'user-edit.php?user_id=' . $u->ID ) ); ?>" style="display:block;padding:8px 14px;color:var(--tx);text-decoration:none;font:inherit"><?php esc_html_e( 'Edit user', 'milieus' ); ?></a>
+							<?php if ( (int) $u->ID !== get_current_user_id() ): ?>
+								<a class="md-menu-item md-delete-user" href="<?php echo esc_url( wp_nonce_url( admin_url( 'users.php?action=delete&user=' . $u->ID ), 'bulk-users' ) ); ?>" style="display:block;padding:8px 14px;color:var(--err);text-decoration:none;font:inherit"><?php esc_html_e( 'Delete user', 'milieus' ); ?></a>
+							<?php endif; ?>
+						</div>
+					</td>
 				</tr>
 				<?php endforeach; ?>
 			</tbody>
@@ -227,5 +291,101 @@ function milieus_render_all_members_page(): void {
 		</div>
 		<?php endif; ?>
 	</div></div>
+
+	<style>
+	.md-menu-btn:hover{background:var(--sf2)}
+	.md-menu-item:hover{background:var(--sf2)}
+	.md-menu-sub:hover>.md-submenu{display:block!important}
+	.md-pill-x:hover{opacity:1!important}
+	</style>
+	<script>
+	(function(){
+		var nonce = <?php echo wp_json_encode( $nonce ); ?>;
+		var ajaxurl = <?php echo wp_json_encode( admin_url( 'admin-ajax.php' ) ); ?>;
+
+		// 3-dot menu toggle.
+		document.addEventListener('click', function(e) {
+			var btn = e.target.closest('.md-menu-btn');
+			// Close all other menus first.
+			document.querySelectorAll('.md-menu').forEach(function(m) {
+				if (!btn || m !== btn.nextElementSibling) m.style.display = 'none';
+			});
+			if (btn) {
+				var menu = btn.nextElementSibling;
+				menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+				e.stopPropagation();
+			}
+		});
+
+		// Close menus on outside click.
+		document.addEventListener('click', function() {
+			document.querySelectorAll('.md-menu').forEach(function(m) { m.style.display = 'none'; });
+		});
+
+		// Prevent menu clicks from bubbling to the close handler.
+		document.querySelectorAll('.md-menu').forEach(function(m) {
+			m.addEventListener('click', function(e) { e.stopPropagation(); });
+		});
+
+		// Add to group.
+		document.querySelectorAll('.md-add-group').forEach(function(btn) {
+			btn.addEventListener('click', function() {
+				var uid = btn.dataset.uid, group = btn.dataset.group;
+				btn.textContent = 'Adding...';
+				post('milieus_directory_add', { user_id: uid, group: group }, function() {
+					location.reload();
+				});
+			});
+		});
+
+		// Remove from group (3-dot submenu).
+		document.querySelectorAll('.md-remove-group').forEach(function(btn) {
+			btn.addEventListener('click', function() {
+				var uid = btn.dataset.uid, group = btn.dataset.group;
+				btn.textContent = 'Removing...';
+				post('milieus_directory_remove', { user_id: uid, group: group }, function() {
+					location.reload();
+				});
+			});
+		});
+
+		// Inline pill X button — remove from group.
+		document.querySelectorAll('.md-pill-x').forEach(function(btn) {
+			btn.addEventListener('click', function(e) {
+				e.stopPropagation();
+				var uid = btn.dataset.uid, group = btn.dataset.group;
+				var pill = btn.closest('.md-pill');
+				pill.style.opacity = '.4';
+				post('milieus_directory_remove', { user_id: uid, group: group }, function() {
+					pill.remove();
+					// If no pills left, show placeholder.
+					var container = btn.closest('tr').querySelector('.md-pills');
+					if (container && !container.querySelector('.md-pill')) {
+						container.innerHTML = '<span style="color:var(--tx3);font-size:12px"><?php echo esc_js( __( 'No groups', 'milieus' ) ); ?></span>';
+					}
+				});
+			});
+		});
+
+		// Delete user confirmation.
+		document.querySelectorAll('.md-delete-user').forEach(function(a) {
+			a.addEventListener('click', function(e) {
+				if (!confirm('<?php echo esc_js( __( 'Delete this user? This cannot be undone.', 'milieus' ) ); ?>')) {
+					e.preventDefault();
+				}
+			});
+		});
+
+		function post(action, data, cb) {
+			data.action = action;
+			data.nonce = nonce;
+			var fd = new FormData();
+			for (var k in data) fd.append(k, data[k]);
+			fetch(ajaxurl, { method: 'POST', body: fd, credentials: 'same-origin' })
+				.then(function(r) { return r.json(); })
+				.then(function(r) { if (cb) cb(r); });
+		}
+	})();
+	</script>
 	<?php
 }
