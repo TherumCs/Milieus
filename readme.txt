@@ -4,7 +4,7 @@ Tags: roles, capabilities, user management, woocommerce, pricing
 Requires at least: 6.4
 Tested up to: 6.7
 Requires PHP: 8.0
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,6 +69,17 @@ It's applied as a negative cart fee on `woocommerce_cart_calculate_fees`, so it 
 Milieus restores core administrator caps on every admin page load. It's there to prevent third-party tools from accidentally locking you out of wp-admin. To turn it off, set `MILIEUS_DISABLE_CAPS_HEAL` to `true` in `wp-config.php`.
 
 == Changelog ==
+
+= 1.2.0 =
+* Approval inbox, CSV import/export UI, sign-up counts, color tags, search/filter, duplicate-group, dashboard widget.
+* WooCommerce auto-group on purchase — attach a group to any product; buying it grants the role with optional per-product duration override.
+* Email notifications — branded welcomes, admin sign-up alerts, expiry reminders, approval requests. Settings under Milieus → Settings.
+* Branded login link at `/login/{slug}` mirroring the registration design.
+* Shortcodes: `[milieus_register]`, `[milieus_login]`, `[milieus_member_status]`, `[milieus_member_count]`.
+* REST API at `/wp-json/milieus/v1/` for groups + members CRUD.
+* Outbound webhooks with HMAC signing for Zapier / Make / n8n.
+* Audit log — append-only history with filters and CSV export.
+* Updates page now also covers GitHub release fetching, ZIP upload, and rollback (introduced last release; mentioned here for completeness).
 
 = 1.1.0 =
 * Reframed as **Member Groups** — same WordPress roles under the hood, but the UI matches how people actually think about them.

@@ -3,7 +3,7 @@
  * Plugin Name:       Milieus by Therum
  * Plugin URI:        https://therum.studio/plugins/milieus
  * Description:       Member groups for WordPress. Bundle users into named groups — Friends & Family, VIP, beta testers — each with their own capabilities, optional WooCommerce discount, expiry, custom registration link, and members list.
- * Version:           1.1.0
+ * Version:           1.2.0
  * Requires at least: 6.4
  * Requires PHP:      8.0
  * Author:            Therum Creative Studios
@@ -15,7 +15,7 @@
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-define( 'MILIEUS_VERSION', '1.1.0' );
+define( 'MILIEUS_VERSION', '1.2.0' );
 define( 'MILIEUS_FILE', __FILE__ );
 define( 'MILIEUS_DIR', plugin_dir_path( __FILE__ ) );
 define( 'MILIEUS_URL', plugin_dir_url( __FILE__ ) );
@@ -34,6 +34,9 @@ require_once MILIEUS_DIR . 'includes/approvals.php';
 require_once MILIEUS_DIR . 'includes/dashboard-widget.php';
 require_once MILIEUS_DIR . 'includes/notifications.php';
 require_once MILIEUS_DIR . 'includes/shortcodes.php';
+require_once MILIEUS_DIR . 'includes/audit.php';
+require_once MILIEUS_DIR . 'includes/webhooks.php';
+require_once MILIEUS_DIR . 'includes/rest.php';
 require_once MILIEUS_DIR . 'includes/updates.php';
 
 // Activation: schedule daily expiry sweep, flush rewrites for /register/{slug}.
@@ -43,7 +46,17 @@ register_activation_hook( __FILE__, function() {
 	}
 	milieus_register_rewrites();
 	flush_rewrite_rules();
+	if ( function_exists( 'milieus_audit_install_schema' ) ) {
+		milieus_audit_install_schema();
+	}
 } );
+
+// Self-heal on plugin update: if the audit table doesn't exist, create it.
+add_action( 'plugins_loaded', function() {
+	if ( (int) get_option( 'milieus_audit_table_version', 0 ) < MILIEUS_AUDIT_TABLE_VERSION ) {
+		milieus_audit_install_schema();
+	}
+}, 20 );
 register_deactivation_hook( __FILE__, function() {
 	wp_clear_scheduled_hook( 'milieus_expire_sweep' );
 	flush_rewrite_rules();
