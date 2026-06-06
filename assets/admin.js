@@ -162,8 +162,21 @@
 
 	function closeEditor() { editor.hidden = true; }
 
-	$('[data-role-new]').addEventListener('click', function() { openEditor(null); });
-	$$('[data-role-cancel]').forEach(function(b) { b.addEventListener('click', closeEditor); });
+	// ── Unsaved-changes warning ────────────────────────────────────────
+	var formDirty = false;
+	window.addEventListener('beforeunload', function(e) {
+		if (formDirty && !editor.hidden) {
+			e.preventDefault();
+			e.returnValue = '';
+		}
+	});
+	function markDirty() { formDirty = true; }
+	// Track changes in the editor
+	editor.addEventListener('input', markDirty);
+	editor.addEventListener('change', markDirty);
+
+	$('[data-role-new]').addEventListener('click', function() { formDirty = false; openEditor(null); });
+	$$('[data-role-cancel]').forEach(function(b) { b.addEventListener('click', function() { formDirty = false; closeEditor(); }); });
 
 	document.addEventListener('click', function(e) {
 		var editBtn = e.target.closest('[data-role-edit]');
@@ -409,6 +422,7 @@
 			.then(function(j) {
 				btn.disabled = false; btn.style.opacity = '';
 				if (j && j.success) {
+					formDirty = false;
 					toast(j.data.msg || 'Saved', 'ok');
 					resultEl.textContent = '';
 					setTimeout(function() { location.reload(); }, 700);
@@ -442,34 +456,68 @@
 				if (j && j.success) {
 					resultEl.textContent = '✓ ' + (j.data.msg || 'Deleted');
 					resultEl.style.color = 'var(--ok,#16a34a)';
+					formDirty = false;
 					setTimeout(function() { location.reload(); }, 800);
 				} else {
 					resultEl.textContent = '✗ ' + ((j && j.data) || 'Failed');
 					resultEl.style.color = 'var(--err,#dc2626)';
 				}
-			});
+			})
+			.catch(function() { toast('Network error', 'err'); resultEl.textContent = ''; });
 	});
 
 	// ── Members tab ────────────────────────────────────────────────────
-	function loadMembers() {
+	var membersPage = 1;
+	var MEMBERS_PER_PAGE = 25;
+
+	function loadMembers(page) {
+		membersPage = page || 1;
 		var fd = new FormData();
 		fd.append('action', 'milieus_members_list');
 		fd.append('nonce', membersNonce);
 		fd.append('key', currentKey);
+		fd.append('page', membersPage);
 		fetch(AJAX, { method: 'POST', credentials: 'same-origin', body: fd })
 			.then(function(r) { return r.json(); })
 			.then(function(j) {
-				if (!j || !j.success) return;
+				if (!j || !j.success) { toast('Failed to load members', 'err'); return; }
 				$('[data-members-count]').textContent = j.data.total;
 				var tbody = $('[data-members-tbody]');
 				tbody.innerHTML = '';
 				if (!j.data.rows.length) {
 					tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--tx3);padding:20px">No members yet — search above to add one.</td></tr>';
+					renderMembersPagination(0);
 					return;
 				}
 				j.data.rows.forEach(function(m) { tbody.appendChild(memberRow(m)); });
 				updateBulk();
-			});
+				renderMembersPagination(j.data.total);
+			})
+			.catch(function() { toast('Network error loading members', 'err'); });
+	}
+
+	function renderMembersPagination(total) {
+		var container = $('[data-members-pagination]');
+		if (!container) return;
+		container.innerHTML = '';
+		var pages = Math.ceil(total / MEMBERS_PER_PAGE);
+		if (pages <= 1) return;
+		for (var p = Math.max(1, membersPage - 3); p <= Math.min(pages, membersPage + 3); p++) {
+			(function(pageNum) {
+				var btn = document.createElement('button');
+				btn.type = 'button';
+				btn.className = 'th-button' + (pageNum === membersPage ? ' th-button-primary' : '');
+				btn.textContent = pageNum;
+				btn.style.cssText = 'min-width:36px;padding:6px 10px;font-size:12px';
+				btn.addEventListener('click', function() { loadMembers(pageNum); });
+				container.appendChild(btn);
+			})(p);
+		}
+		var info = document.createElement('span');
+		info.className = 'th-roles-caps';
+		info.style.marginLeft = '8px';
+		info.textContent = 'Page ' + membersPage + ' of ' + pages;
+		container.appendChild(info);
 	}
 
 	function memberRow(m) {
@@ -535,7 +583,8 @@
 		ids.forEach(function(id) { fd.append('user_ids[]', id); });
 		fetch(AJAX, { method: 'POST', credentials: 'same-origin', body: fd })
 			.then(function(r) { return r.json(); })
-			.then(function(j) { if (cb) cb(j); });
+			.then(function(j) { if (cb) cb(j); })
+			.catch(function() { toast('Network error', 'err'); });
 	}
 
 	// Search-add
@@ -582,7 +631,8 @@
 					});
 				}
 				searchResults.hidden = false;
-			});
+			})
+			.catch(function() { toast('Network error', 'err'); });
 	}
 
 	function addMember(uid) {
@@ -593,7 +643,8 @@
 		fd.append('user_id', uid);
 		fetch(AJAX, { method: 'POST', credentials: 'same-origin', body: fd })
 			.then(function(r) { return r.json(); })
-			.then(function() { loadMembers(); });
+			.then(function() { loadMembers(); })
+			.catch(function() { toast('Network error', 'err'); });
 	}
 
 	// ── Starter-pack template apply (from onboarding.php) ──────────────
@@ -634,12 +685,14 @@
 					if (j && j.success) {
 						resultEl.textContent = '✓ Duplicated as "' + j.data.name + '"';
 						resultEl.style.color = 'var(--ok,#16a34a)';
+						formDirty = false;
 						setTimeout(function() { location.reload(); }, 800);
 					} else {
 						resultEl.textContent = '✗ ' + ((j && j.data) || 'Failed');
 						resultEl.style.color = 'var(--err,#dc2626)';
 					}
-				});
+				})
+				.catch(function() { toast('Network error', 'err'); resultEl.textContent = ''; });
 		});
 	}
 
@@ -668,7 +721,8 @@
 					} else {
 						csvResult.textContent = '✗ ' + ((j && j.data) || 'Failed');
 					}
-				});
+				})
+				.catch(function() { toast('Network error', 'err'); csvResult.textContent = ''; });
 		});
 	}
 
@@ -698,6 +752,9 @@
 					resultEl.textContent = '✗ ' + ((j && j.data) || 'Failed');
 					resultEl.style.color = 'var(--err,#dc2626)';
 				}
+			})
+			.catch(function() {
+				if (resultEl) { resultEl.textContent = '✗ Network error'; resultEl.style.color = 'var(--err,#dc2626)'; }
 			});
 	});
 })();

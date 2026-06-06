@@ -4,7 +4,7 @@ Tags: roles, capabilities, user management, woocommerce, pricing
 Requires at least: 6.4
 Tested up to: 6.7
 Requires PHP: 8.0
-Stable tag: 1.4.0
+Stable tag: 1.5.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,6 +69,25 @@ It's applied as a negative cart fee on `woocommerce_cart_calculate_fees`, so it 
 Milieus restores core administrator caps on every admin page load. It's there to prevent third-party tools from accidentally locking you out of wp-admin. To turn it off, set `MILIEUS_DISABLE_CAPS_HEAL` to `true` in `wp-config.php`.
 
 == Changelog ==
+
+= 1.5.0 =
+* **AJAX login shortcode** — `[milieus_login]` now submits via AJAX instead of navigating away, preventing 404s on embedded forms.
+* **Fetch error handling** — every admin AJAX call now has `.catch()` with toast so network/server errors surface instead of silently failing.
+* **Webhook improvements** — per-row remove button and "Send test ping" button with live HTTP status result.
+* **Test email** — "Send test email" button on the Notifications settings page.
+* **Bulk approvals** — select-all checkbox + bulk approve/reject on the Approvals inbox, with flash message counts.
+* **Audit log improvements** — details column parses JSON notes (Order #, Product #, Exp date, Sub #); user/group/actor names are clickable links; user filter is now an autocomplete search instead of raw ID.
+* **Dashboard widget** — clickable user names, "View all →" and "Audit log →" links, footer with quick-nav links and pending count.
+* **Starter packs dropdown** — one-click access to Friends & Family / VIP / Beta / Trial templates from the groups page.
+* **Webhook test ping** — verifies endpoint reachability and reports HTTP response code.
+* **All Members bulk actions** — select-all checkbox + "Add to group" / "Remove from group" dropdowns for batch operations.
+* **Members pagination** — paginated member lists on the group editor (25/page) with page controls.
+* **Admin-page pagination container** — proper container element for client-side pagination rendering.
+* **Audit log linked details** — order/product/subscription IDs link to their WooCommerce edit screens.
+* **Audit user-search autocomplete** — typeahead search replaces raw user ID filter input.
+* **Approvals extra fields** — pending-user rows show name, company, phone, referral, and how-heard from registration.
+* **Unsaved changes warning** — `beforeunload` guard on the group editor so accidental navigation doesn't lose edits.
+* **Gutenberg blocks** — new blocks for Login Form, Member Status, and Member Count (joins existing Registration Form block). All four use ServerSideRender with sidebar controls.
 
 = 1.4.0 =
 * **All Members directory** — new page at Milieus → All Members showing every user on the site with their group memberships as color-coded tags. Search by name/email, filter by group, sort by name/joined/email, paginated at 50/page. Shows avatar, group tags, joined date, expiry status (color-coded urgent/soon), source, and WP role.

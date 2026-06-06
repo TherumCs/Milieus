@@ -22,7 +22,7 @@
 - **WooCommerce Subscriptions** — recurring memberships; member expiry pins to next-payment so the cron sweep won't yank paying members.
 - **WC role-based pricing** — per-group % discount applied at checkout.
 - **Shortcodes** — `[milieus_register]`, `[milieus_login]`, `[milieus_member_status]`, `[milieus_member_count]`.
-- **Gutenberg block** — `Milieus Registration Form` with live editor preview.
+- **Gutenberg blocks** — Registration Form, Login Form, Member Status, and Member Count — all with live editor preview via ServerSideRender.
 - **REST API** — `/wp-json/milieus/v1/groups[…]` for programmatic member management. Standard WP auth (Application Passwords).
 - **Outbound webhooks** — HMAC-SHA256-signed POSTs on member events. Zapier / Make / n8n compatible.
 - **Audit log** — append-only history of every membership change with filters + CSV export.
@@ -163,7 +163,7 @@ includes/
   notifications.php          — email senders + Milieus → Settings page
   shortcodes.php             — inline shortcodes
   onboarding.php             — first-activation notice + starter packs + help helper
-  block.php                  — Gutenberg block registration
+  block.php                  — Gutenberg blocks (register, login, status, count)
   updates.php                — GitHub release fetch + ZIP upload + rollback
   audit.php                  — append-only history (custom table)
   webhooks.php               — outbound HMAC-signed POSTs

@@ -183,12 +183,105 @@ function milieus_render_webhooks_page(): void {
 				var wrap = document.createElement('div');
 				wrap.innerHTML = html;
 				document.getElementById('webhook-rows').appendChild(wrap.firstElementChild);
+				bindWebhookRow(wrap.firstElementChild);
 			});
+
+			// Remove webhook row
+			function bindWebhookRow(row) {
+				var removeBtn = row.querySelector('.milieus-webhook-remove');
+				if (removeBtn) {
+					removeBtn.addEventListener('click', function() {
+						if (document.querySelectorAll('.milieus-webhook-row').length <= 1) return;
+						if (!confirm(<?php echo wp_json_encode( __( 'Remove this webhook?', 'milieus' ) ); ?>)) return;
+						row.remove();
+					});
+				}
+				var testBtn = row.querySelector('.milieus-webhook-test');
+				if (testBtn) {
+					testBtn.addEventListener('click', function() {
+						var urlInput = row.querySelector('input[type=url]');
+						var secretInput = row.querySelector('input[name*="[secret]"]');
+						var url = urlInput ? urlInput.value.trim() : '';
+						var secret = secretInput ? secretInput.value.trim() : '';
+						var resultEl = row.querySelector('.milieus-webhook-test-result');
+						if (!url) { resultEl.textContent = <?php echo wp_json_encode( __( 'Enter a URL first.', 'milieus' ) ); ?>; return; }
+						testBtn.disabled = true;
+						resultEl.textContent = <?php echo wp_json_encode( __( 'Sending…', 'milieus' ) ); ?>;
+						resultEl.style.color = 'var(--tx3)';
+						var fd = new FormData();
+						fd.append('action', 'milieus_webhook_test');
+						fd.append('_wpnonce', <?php echo wp_json_encode( wp_create_nonce( 'milieus_webhook_test' ) ); ?>);
+						fd.append('url', url);
+						fd.append('secret', secret);
+						fetch(<?php echo wp_json_encode( admin_url( 'admin-ajax.php' ) ); ?>, { method:'POST', body:fd, credentials:'same-origin' })
+							.then(function(r){ return r.json(); })
+							.then(function(j){
+								testBtn.disabled = false;
+								if (j && j.success) {
+									resultEl.textContent = '✓ ' + (j.data.msg || 'Sent');
+									resultEl.style.color = 'var(--ok,#16a34a)';
+								} else {
+									resultEl.textContent = '✗ ' + ((j && j.data) || 'Failed');
+									resultEl.style.color = 'var(--err,#dc2626)';
+								}
+							}).catch(function(){
+								testBtn.disabled = false;
+								resultEl.textContent = '✗ Network error';
+								resultEl.style.color = 'var(--err,#dc2626)';
+							});
+					});
+				}
+			}
+
+			// Bind existing rows
+			document.querySelectorAll('.milieus-webhook-row').forEach(bindWebhookRow);
 		})();
 		</script>
 	</div></div>
 	<?php
 }
+
+// ── AJAX: test ping ─────────────────────────────────────────────────
+
+add_action( 'wp_ajax_milieus_webhook_test', function() {
+	if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( 'forbidden', 403 );
+	check_ajax_referer( 'milieus_webhook_test' );
+
+	$url    = esc_url_raw( $_POST['url'] ?? '' );
+	$secret = sanitize_text_field( $_POST['secret'] ?? '' );
+	if ( ! $url ) wp_send_json_error( __( 'URL is required.', 'milieus' ) );
+
+	$body = wp_json_encode( [
+		'event'     => 'test.ping',
+		'timestamp' => time(),
+		'site'      => home_url(),
+		'data'      => [ 'message' => 'This is a test ping from Milieus.' ],
+	] );
+
+	$signature = hash_hmac( 'sha256', $body, $secret );
+	$response  = wp_remote_post( $url, [
+		'blocking' => true,
+		'timeout'  => 10,
+		'headers'  => [
+			'Content-Type'        => 'application/json',
+			'X-Milieus-Event'     => 'test.ping',
+			'X-Milieus-Signature' => $signature,
+			'User-Agent'          => 'Milieus/' . MILIEUS_VERSION,
+		],
+		'body'     => $body,
+	] );
+
+	if ( is_wp_error( $response ) ) {
+		wp_send_json_error( $response->get_error_message() );
+	}
+
+	$code = wp_remote_retrieve_response_code( $response );
+	if ( $code >= 200 && $code < 300 ) {
+		wp_send_json_success( [ 'msg' => sprintf( __( 'HTTP %d — delivered.', 'milieus' ), $code ) ] );
+	} else {
+		wp_send_json_error( sprintf( __( 'HTTP %d — receiver did not accept the ping.', 'milieus' ), $code ) );
+	}
+} );
 
 function milieus_render_webhook_row( int $i, array $h, array $events ): void {
 	echo milieus_capture_webhook_row( $i, $h, $events );
@@ -198,16 +291,17 @@ function milieus_capture_webhook_row( int $i, array $h, array $events ): string 
 	ob_start();
 	$idx = $i === 0 && empty( $h['url'] ) ? '__IDX__' : $i;
 	?>
-	<div class="th-settings-card" style="margin-bottom:10px">
-		<div style="display:grid;grid-template-columns:1fr auto;gap:14px;align-items:start;margin-bottom:10px">
+	<div class="th-settings-card milieus-webhook-row" style="margin-bottom:10px">
+		<div style="display:grid;grid-template-columns:1fr auto auto;gap:14px;align-items:start;margin-bottom:10px">
 			<input class="th-input" name="hooks[<?php echo esc_attr( $idx ); ?>][url]" type="url" value="<?php echo esc_attr( $h['url'] ?? '' ); ?>" placeholder="https://hooks.example.com/milieus" required>
 			<label style="font-size:13px;display:flex;align-items:center;gap:6px"><input type="checkbox" name="hooks[<?php echo esc_attr( $idx ); ?>][enabled]" value="1" <?php checked( ! empty( $h['enabled'] ) ); ?>> <?php esc_html_e( 'Enabled', 'milieus' ); ?></label>
+			<button type="button" class="th-link-btn danger milieus-webhook-remove" title="<?php esc_attr_e( 'Remove this webhook', 'milieus' ); ?>" style="color:var(--err,#dc2626);font-size:18px;padding:0 4px">&times;</button>
 		</div>
 		<div style="margin-bottom:10px">
 			<label style="display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--tx2);margin-bottom:4px"><?php esc_html_e( 'Signing secret', 'milieus' ); ?></label>
 			<input class="th-input" name="hooks[<?php echo esc_attr( $idx ); ?>][secret]" type="text" value="<?php echo esc_attr( $h['secret'] ?? '' ); ?>" style="font-family:ui-monospace,Menlo,monospace;font-size:12px;width:100%;max-width:520px">
 		</div>
-		<div>
+		<div style="margin-bottom:10px">
 			<label style="display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--tx2);margin-bottom:6px"><?php esc_html_e( 'Events', 'milieus' ); ?></label>
 			<div style="display:flex;flex-wrap:wrap;gap:8px">
 				<?php foreach ( $events as $e ): ?>
@@ -216,6 +310,10 @@ function milieus_capture_webhook_row( int $i, array $h, array $events ): string 
 				</label>
 				<?php endforeach; ?>
 			</div>
+		</div>
+		<div style="display:flex;gap:8px;align-items:center">
+			<button type="button" class="th-button milieus-webhook-test" data-idx="<?php echo esc_attr( $idx ); ?>"><?php esc_html_e( '⚡ Send test ping', 'milieus' ); ?></button>
+			<span class="milieus-webhook-test-result" style="font-size:12px;color:var(--tx3)"></span>
 		</div>
 	</div>
 	<?php

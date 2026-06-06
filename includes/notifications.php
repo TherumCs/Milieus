@@ -243,8 +243,65 @@ function milieus_render_settings_page(): void {
 				</div>
 			</div>
 
-			<p style="margin-top:14px"><button type="submit" class="th-button th-button-primary"><?php esc_html_e( 'Save settings', 'milieus' ); ?></button></p>
+			<p style="margin-top:14px;display:flex;gap:10px;align-items:center">
+				<button type="submit" class="th-button th-button-primary"><?php esc_html_e( 'Save settings', 'milieus' ); ?></button>
+				<button type="button" class="th-button" id="milieus-test-email"><?php esc_html_e( '✉ Send test email', 'milieus' ); ?></button>
+				<span id="milieus-test-email-result" style="font-size:12px;color:var(--tx3)"></span>
+			</p>
 		</form>
+		<script>
+		(function(){
+			var btn = document.getElementById('milieus-test-email');
+			var res = document.getElementById('milieus-test-email-result');
+			btn.addEventListener('click', function() {
+				btn.disabled = true;
+				res.textContent = <?php echo wp_json_encode( __( 'Sending…', 'milieus' ) ); ?>;
+				res.style.color = 'var(--tx3)';
+				var fd = new FormData();
+				fd.append('action', 'milieus_test_email');
+				fd.append('_wpnonce', <?php echo wp_json_encode( wp_create_nonce( 'milieus_test_email' ) ); ?>);
+				fetch(<?php echo wp_json_encode( admin_url( 'admin-ajax.php' ) ); ?>, { method:'POST', body:fd, credentials:'same-origin' })
+					.then(function(r){ return r.json(); })
+					.then(function(j){
+						btn.disabled = false;
+						if (j && j.success) {
+							res.textContent = '✓ ' + (j.data.msg || 'Sent');
+							res.style.color = 'var(--ok,#16a34a)';
+						} else {
+							res.textContent = '✗ ' + ((j && j.data) || 'Failed');
+							res.style.color = 'var(--err,#dc2626)';
+						}
+					}).catch(function(){
+						btn.disabled = false;
+						res.textContent = '✗ Network error';
+						res.style.color = 'var(--err,#dc2626)';
+					});
+			});
+		})();
+		</script>
 	</div></div>
 	<?php
 }
+
+// ── AJAX: send test email ───────────────────────────────────────────
+
+add_action( 'wp_ajax_milieus_test_email', function() {
+	if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( 'forbidden', 403 );
+	check_ajax_referer( 'milieus_test_email' );
+
+	$s    = milieus_notifications_settings();
+	$to   = $s['admin_to'];
+	$subj = sprintf( '[%s] Milieus test email', $s['from_name'] );
+	$body = milieus_email_shell(
+		__( 'Test email', 'milieus' ),
+		'#2563eb',
+		'<p>' . esc_html__( 'If you can read this, your Milieus email settings are working correctly.', 'milieus' ) . '</p>'
+		. '<p style="color:#a8a29e;font-size:12px">' . esc_html( sprintf( __( 'Sent to %s at %s', 'milieus' ), $to, wp_date( 'g:i a · M j, Y' ) ) ) . '</p>'
+	);
+	$sent = milieus_send_email( $to, $subj, $body );
+	if ( $sent ) {
+		wp_send_json_success( [ 'msg' => sprintf( __( 'Sent to %s', 'milieus' ), $to ) ] );
+	} else {
+		wp_send_json_error( __( 'wp_mail() returned false — check your mail configuration.', 'milieus' ) );
+	}
+} );

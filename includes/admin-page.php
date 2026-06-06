@@ -221,7 +221,11 @@ function milieus_render_roles_page(): void {
 						<tr data-role-row="<?php echo esc_attr( $key ); ?>" data-row-search="<?php echo esc_attr( strtolower( $role['name'] . ' ' . $key . ' ' . $reg_slug ) ); ?>">
 							<td>
 								<span class="th-color-dot" style="background:<?php echo esc_attr( $color ); ?>"></span>
-								<strong><?php echo esc_html( $role['name'] ); ?></strong>
+								<?php if ( $is_custom ): ?>
+									<a href="#" data-role-edit="<?php echo esc_attr( $key ); ?>" style="text-decoration:none;color:inherit"><strong><?php echo esc_html( $role['name'] ); ?></strong></a>
+								<?php else: ?>
+									<strong><?php echo esc_html( $role['name'] ); ?></strong>
+								<?php endif; ?>
 								<?php if ( $discount > 0 ): ?>
 									<span class="th-pill">−<?php echo esc_html( rtrim( rtrim( number_format( $discount, 2 ), '0' ), '.' ) ); ?>% off</span>
 								<?php endif; ?>
@@ -271,7 +275,32 @@ function milieus_render_roles_page(): void {
 			function() use ( $bundles, $all_caps, $custom, $woo_active, $nonce, $members_nonce, $site_url ) {
 				?>
 				<div class="th-role-builder" data-milieus-role-builder data-nonce="<?php echo esc_attr( $nonce ); ?>" data-members-nonce="<?php echo esc_attr( $members_nonce ); ?>" data-site-url="<?php echo esc_attr( $site_url ); ?>">
-					<button type="button" class="th-button th-button-primary" data-role-new>＋ <?php esc_html_e( 'New group', 'milieus' ); ?></button>
+					<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+						<button type="button" class="th-button th-button-primary" data-role-new>＋ <?php esc_html_e( 'New group', 'milieus' ); ?></button>
+						<div style="position:relative;display:inline-block" data-starter-wrap>
+							<button type="button" class="th-button" data-starter-toggle><?php esc_html_e( '✦ Starter packs', 'milieus' ); ?></button>
+							<div data-starter-menu style="display:none;position:absolute;left:0;top:100%;margin-top:6px;background:#fff;border:1px solid var(--bd,#e7e5e4);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.1);min-width:240px;z-index:50;padding:6px 0;font-size:13px">
+								<?php foreach ( milieus_starter_packs() as $pk => $p ): ?>
+									<a href="<?php echo esc_url( admin_url( 'admin.php?page=milieus-roles&milieus_template=' . $pk ) ); ?>" style="display:flex;align-items:center;gap:10px;padding:10px 14px;text-decoration:none;color:var(--tx,#1c1917)">
+										<span style="width:10px;height:10px;border-radius:50%;background:<?php echo esc_attr( $p['color'] ); ?>;flex-shrink:0"></span>
+										<div>
+											<strong><?php echo esc_html( $p['name'] ); ?></strong><br>
+											<small style="color:var(--tx3,#a8a29e)"><?php echo esc_html( $p['reg']['lede'] ?? '' ); ?></small>
+										</div>
+									</a>
+								<?php endforeach; ?>
+							</div>
+						</div>
+					</div>
+					<script>
+					(function(){
+						var wrap = document.querySelector('[data-starter-wrap]');
+						var btn = wrap.querySelector('[data-starter-toggle]');
+						var menu = wrap.querySelector('[data-starter-menu]');
+						btn.addEventListener('click', function(e) { e.stopPropagation(); menu.style.display = menu.style.display === 'none' ? 'block' : 'none'; });
+						document.addEventListener('click', function(e) { if (!wrap.contains(e.target)) menu.style.display = 'none'; });
+					})();
+					</script>
 
 					<div class="th-role-editor" data-role-editor hidden>
 						<div class="th-role-editor-head">
@@ -536,6 +565,7 @@ function milieus_render_roles_page(): void {
 									<tr><td colspan="6" style="text-align:center;color:var(--tx3);padding:20px"><?php esc_html_e( 'Loading members…', 'milieus' ); ?></td></tr>
 								</tbody>
 							</table>
+							<div data-members-pagination style="margin-top:10px;display:flex;gap:6px;align-items:center"></div>
 						</div>
 
 						<div class="th-role-actions">

@@ -108,33 +108,42 @@ function milieus_dashboard_widget_render(): void {
 	</div>
 
 	<div class="mw-list">
-		<h4><?php esc_html_e( 'Recent sign-ups', 'milieus' ); ?></h4>
+		<h4><?php esc_html_e( 'Recent sign-ups', 'milieus' ); ?> <a href="<?php echo esc_url( admin_url( 'admin.php?page=milieus-all-members' ) ); ?>" style="font-weight:400;font-size:11px;text-transform:none;letter-spacing:0;color:#2563eb"><?php esc_html_e( 'View all →', 'milieus' ); ?></a></h4>
 		<?php if ( ! $recent ): ?>
 			<p class="mw-meta"><?php esc_html_e( 'No sign-ups in the last 7 days.', 'milieus' ); ?></p>
 		<?php else: ?>
 			<ul>
 				<?php foreach ( $recent as $r ): ?>
 				<li>
-					<span><span class="mw-dot" style="background:<?php echo esc_attr( $r['group']['color'] ?? '#2563eb' ); ?>"></span><strong><?php echo esc_html( $r['user']->display_name ?: $r['user']->user_email ); ?></strong> · <?php echo esc_html( $r['group']['name'] ); ?></span>
+					<span><span class="mw-dot" style="background:<?php echo esc_attr( $r['group']['color'] ?? '#2563eb' ); ?>"></span><a href="<?php echo esc_url( admin_url( 'user-edit.php?user_id=' . $r['user']->ID ) ); ?>" style="text-decoration:none;color:inherit"><strong><?php echo esc_html( $r['user']->display_name ?: $r['user']->user_email ); ?></strong></a> · <a href="<?php echo esc_url( admin_url( 'admin.php?page=milieus-roles' ) ); ?>" style="text-decoration:none;color:inherit"><?php echo esc_html( $r['group']['name'] ); ?></a></span>
 					<span class="mw-meta"><?php echo esc_html( human_time_diff( $r['when'] ) ); ?> ago · <?php echo esc_html( $r['source'] ); ?></span>
 				</li>
 				<?php endforeach; ?>
 			</ul>
 		<?php endif; ?>
 
-		<h4><?php esc_html_e( 'Expiring this week', 'milieus' ); ?></h4>
+		<h4><?php esc_html_e( 'Expiring this week', 'milieus' ); ?> <a href="<?php echo esc_url( admin_url( 'admin.php?page=milieus-audit&event=member.expiring_soon' ) ); ?>" style="font-weight:400;font-size:11px;text-transform:none;letter-spacing:0;color:#2563eb"><?php esc_html_e( 'Audit log →', 'milieus' ); ?></a></h4>
 		<?php if ( ! $soon ): ?>
 			<p class="mw-meta"><?php esc_html_e( 'No memberships expiring soon.', 'milieus' ); ?></p>
 		<?php else: ?>
 			<ul>
 				<?php foreach ( $soon as $r ): ?>
 				<li>
-					<span><span class="mw-dot" style="background:<?php echo esc_attr( $r['group']['color'] ?? '#2563eb' ); ?>"></span><strong><?php echo esc_html( $r['user']->display_name ?: $r['user']->user_email ); ?></strong> · <?php echo esc_html( $r['group']['name'] ); ?></span>
+					<span><span class="mw-dot" style="background:<?php echo esc_attr( $r['group']['color'] ?? '#2563eb' ); ?>"></span><a href="<?php echo esc_url( admin_url( 'user-edit.php?user_id=' . $r['user']->ID ) ); ?>" style="text-decoration:none;color:inherit"><strong><?php echo esc_html( $r['user']->display_name ?: $r['user']->user_email ); ?></strong></a> · <?php echo esc_html( $r['group']['name'] ); ?></span>
 					<span class="mw-meta"><?php echo esc_html( milieus_humanize_expiry( $r['expires'] ) ); ?></span>
 				</li>
 				<?php endforeach; ?>
 			</ul>
 		<?php endif; ?>
+
+		<div style="margin-top:12px;padding-top:10px;border-top:1px solid #e7e5e4;display:flex;gap:12px;font-size:12px">
+			<a href="<?php echo esc_url( admin_url( 'admin.php?page=milieus-roles' ) ); ?>"><?php esc_html_e( 'Groups', 'milieus' ); ?></a>
+			<a href="<?php echo esc_url( admin_url( 'admin.php?page=milieus-all-members' ) ); ?>"><?php esc_html_e( 'All Members', 'milieus' ); ?></a>
+			<a href="<?php echo esc_url( admin_url( 'admin.php?page=milieus-audit' ) ); ?>"><?php esc_html_e( 'Audit log', 'milieus' ); ?></a>
+			<?php if ( $pending ): ?>
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=milieus-approvals' ) ); ?>" style="color:#2563eb;font-weight:600"><?php printf( esc_html__( '%d pending', 'milieus' ), $pending ); ?></a>
+			<?php endif; ?>
+		</div>
 	</div>
 	<?php
 }

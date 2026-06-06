@@ -80,6 +80,9 @@ function milieus_sc_register( $atts = [] ): string {
 
 /**
  * [milieus_login group="x"] — inline branded login form.
+ *
+ * Submits via AJAX so the user stays on the current page. Falls back
+ * to the /login/{slug} rewrite route for no-JS clients.
  */
 function milieus_sc_login( $atts = [] ): string {
 	$atts = shortcode_atts( [ 'group' => '', 'title' => '' ], $atts, 'milieus_login' );
@@ -91,26 +94,85 @@ function milieus_sc_login( $atts = [] ): string {
 	$reg = $group['reg'];
 	$color = $reg['color'] ?: '#2563eb';
 	$heading = $atts['title'] ?: sprintf( __( 'Sign in to %s', 'milieus' ), $group['name'] );
-	$action  = home_url( '/login/' . $reg['slug'] );
-	$nonce   = wp_create_nonce( 'milieus_login_' . $reg['slug'] );
+	$nonce   = wp_create_nonce( 'milieus_shortcode_login' );
+	$redirect = esc_url( $reg['redirect'] ?: home_url( '/' ) );
 	$h = fn( $s ) => esc_html( (string) $s );
+	$uid = 'milieus-login-' . wp_unique_id();
 
 	ob_start();
 	?>
-	<div class="milieus-inline-card" style="--m-accent:<?php echo $h( $color ); ?>">
+	<div class="milieus-inline-card" id="<?php echo esc_attr( $uid ); ?>" style="--m-accent:<?php echo $h( $color ); ?>">
 		<?php milieus_inline_card_styles(); ?>
 		<?php if ( ! empty( $reg['brand'] ) ): ?><div class="m-brand"><?php echo $h( $reg['brand'] ); ?></div><?php endif; ?>
 		<h2><?php echo $h( $heading ); ?></h2>
-		<form method="post" action="<?php echo esc_url( $action ); ?>" autocomplete="on">
+		<div class="m-login-error" style="display:none;background:color-mix(in srgb,#dc2626 8%,transparent);border:1px solid color-mix(in srgb,#dc2626 28%,transparent);color:#dc2626;padding:11px 14px;border-radius:8px;margin-bottom:6px;font-size:13px"></div>
+		<form method="post" action="<?php echo esc_url( home_url( '/login/' . $reg['slug'] ) ); ?>" autocomplete="on" data-milieus-login-form>
 			<input type="hidden" name="milieus_nonce" value="<?php echo esc_attr( $nonce ); ?>">
+			<input type="hidden" name="slug" value="<?php echo esc_attr( $reg['slug'] ); ?>">
+			<input type="hidden" name="redirect" value="<?php echo esc_attr( $redirect ); ?>">
 			<label>Email <input type="email" name="email" required autocomplete="email"></label>
 			<label>Password <input type="password" name="password" required autocomplete="current-password"></label>
 			<label class="m-remember"><input type="checkbox" name="remember" value="1" checked> Remember me</label>
 			<button type="submit"><?php esc_html_e( 'Sign in →', 'milieus' ); ?></button>
 		</form>
 	</div>
+	<script>
+	(function(){
+		var wrap = document.getElementById(<?php echo wp_json_encode( $uid ); ?>);
+		var form = wrap.querySelector('[data-milieus-login-form]');
+		var errEl = wrap.querySelector('.m-login-error');
+		form.addEventListener('submit', function(e) {
+			e.preventDefault();
+			var btn = form.querySelector('button[type=submit]');
+			btn.disabled = true; btn.textContent = <?php echo wp_json_encode( __( 'Signing in…', 'milieus' ) ); ?>;
+			errEl.style.display = 'none';
+			var fd = new FormData(form);
+			fd.append('action', 'milieus_shortcode_login');
+			fetch(<?php echo wp_json_encode( admin_url( 'admin-ajax.php' ) ); ?>, {
+				method: 'POST', body: fd, credentials: 'same-origin'
+			}).then(function(r){ return r.json(); }).then(function(j){
+				if (j && j.success) {
+					window.location.href = j.data.redirect || <?php echo wp_json_encode( $redirect ); ?>;
+				} else {
+					errEl.textContent = (j && j.data) || <?php echo wp_json_encode( __( 'Login failed.', 'milieus' ) ); ?>;
+					errEl.style.display = 'block';
+					btn.disabled = false; btn.textContent = <?php echo wp_json_encode( __( 'Sign in →', 'milieus' ) ); ?>;
+				}
+			}).catch(function(){
+				errEl.textContent = <?php echo wp_json_encode( __( 'Network error — please try again.', 'milieus' ) ); ?>;
+				errEl.style.display = 'block';
+				btn.disabled = false; btn.textContent = <?php echo wp_json_encode( __( 'Sign in →', 'milieus' ) ); ?>;
+			});
+		});
+	})();
+	</script>
 	<?php
 	return (string) ob_get_clean();
+}
+
+// ── AJAX handler for inline login shortcode ────────────────────────────
+add_action( 'wp_ajax_milieus_shortcode_login',        'milieus_ajax_shortcode_login' );
+add_action( 'wp_ajax_nopriv_milieus_shortcode_login', 'milieus_ajax_shortcode_login' );
+
+function milieus_ajax_shortcode_login(): void {
+	check_ajax_referer( 'milieus_shortcode_login', 'milieus_nonce' );
+
+	$slug = sanitize_title( $_POST['slug'] ?? '' );
+	$group = milieus_group_by_reg_slug( $slug );
+	if ( ! $group ) wp_send_json_error( __( 'Invalid login link.', 'milieus' ) );
+
+	$creds = [
+		'user_login'    => sanitize_text_field( $_POST['email'] ?? '' ),
+		'user_password' => (string) ( $_POST['password'] ?? '' ),
+		'remember'      => ! empty( $_POST['remember'] ),
+	];
+	$user = wp_signon( $creds, is_ssl() );
+	if ( is_wp_error( $user ) ) {
+		wp_send_json_error( __( 'Email or password did not match.', 'milieus' ) );
+	}
+
+	$redirect = esc_url_raw( $_POST['redirect'] ?? '' ) ?: ( $group['reg']['redirect'] ?: home_url( '/' ) );
+	wp_send_json_success( [ 'redirect' => $redirect ] );
 }
 
 /**

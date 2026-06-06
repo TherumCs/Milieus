@@ -155,9 +155,37 @@ function milieus_render_all_members_page(): void {
 			</form>
 		</div>
 
+		<!-- Bulk action bar (hidden until checkboxes are checked) -->
+		<div id="md-bulk-bar" style="display:none;margin-top:14px;padding:10px 14px;background:color-mix(in srgb,#2563eb 6%,#fafaf9);border:1px solid color-mix(in srgb,#2563eb 18%,transparent);border-radius:10px;font-size:13px;align-items:center;gap:10px">
+			<span><strong id="md-bulk-count">0</strong> <?php esc_html_e( 'selected', 'milieus' ); ?></span>
+			<div style="position:relative;display:inline-block" data-md-bulk-add-wrap>
+				<button type="button" class="th-button" id="md-bulk-add-btn"><?php esc_html_e( 'Add to group ▾', 'milieus' ); ?></button>
+				<div id="md-bulk-add-menu" style="display:none;position:absolute;left:0;top:100%;margin-top:4px;background:#fff;border:1px solid var(--bd);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.1);min-width:180px;z-index:50;padding:6px 0">
+					<?php foreach ( $groups as $k => $g ): ?>
+						<button type="button" class="md-menu-item md-bulk-add-group" data-group="<?php echo esc_attr( $k ); ?>" style="width:100%;text-align:left;background:none;border:0;padding:8px 14px;cursor:pointer;color:var(--tx);font:inherit;display:flex;align-items:center;gap:8px">
+							<span style="width:8px;height:8px;border-radius:50%;background:<?php echo esc_attr( $g['color'] ?? '#2563eb' ); ?>;flex-shrink:0"></span>
+							<?php echo esc_html( $g['name'] ); ?>
+						</button>
+					<?php endforeach; ?>
+				</div>
+			</div>
+			<div style="position:relative;display:inline-block" data-md-bulk-remove-wrap>
+				<button type="button" class="th-button" id="md-bulk-remove-btn"><?php esc_html_e( 'Remove from group ▾', 'milieus' ); ?></button>
+				<div id="md-bulk-remove-menu" style="display:none;position:absolute;left:0;top:100%;margin-top:4px;background:#fff;border:1px solid var(--bd);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.1);min-width:180px;z-index:50;padding:6px 0">
+					<?php foreach ( $groups as $k => $g ): ?>
+						<button type="button" class="md-menu-item md-bulk-remove-group" data-group="<?php echo esc_attr( $k ); ?>" style="width:100%;text-align:left;background:none;border:0;padding:8px 14px;cursor:pointer;color:var(--tx);font:inherit;display:flex;align-items:center;gap:8px">
+							<span style="width:8px;height:8px;border-radius:50%;background:<?php echo esc_attr( $g['color'] ?? '#2563eb' ); ?>;flex-shrink:0"></span>
+							<?php echo esc_html( $g['name'] ); ?>
+						</button>
+					<?php endforeach; ?>
+				</div>
+			</div>
+		</div>
+
 		<!-- Members table -->
 		<table class="th-roles-table" style="margin-top:14px">
 			<thead><tr>
+				<th style="width:40px"><input type="checkbox" id="md-check-all"></th>
 				<th style="width:260px"><a href="<?php echo esc_url( $sort_url( 'display_name' ) ); ?>" style="text-decoration:none;color:inherit"><?php esc_html_e( 'User', 'milieus' ); ?><?php echo $sort_icon( 'display_name' ); ?></a></th>
 				<th><?php esc_html_e( 'Groups', 'milieus' ); ?></th>
 				<th style="width:110px"><a href="<?php echo esc_url( $sort_url( 'registered' ) ); ?>" style="text-decoration:none;color:inherit"><?php esc_html_e( 'Joined', 'milieus' ); ?><?php echo $sort_icon( 'registered' ); ?></a></th>
@@ -167,7 +195,7 @@ function milieus_render_all_members_page(): void {
 			</tr></thead>
 			<tbody>
 				<?php if ( ! $users ): ?>
-					<tr><td colspan="6" style="text-align:center;color:var(--tx3);padding:20px"><?php esc_html_e( 'No users match these filters.', 'milieus' ); ?></td></tr>
+					<tr><td colspan="7" style="text-align:center;color:var(--tx3);padding:20px"><?php esc_html_e( 'No users match these filters.', 'milieus' ); ?></td></tr>
 				<?php endif; ?>
 				<?php foreach ( $users as $u ):
 					$memberships = $user_groups[ $u->ID ] ?? [];
@@ -187,6 +215,7 @@ function milieus_render_all_members_page(): void {
 					$available_groups = array_filter( $groups, fn( $k ) => ! in_array( $k, $membership_keys, true ), ARRAY_FILTER_USE_KEY );
 				?>
 				<tr data-uid="<?php echo (int) $u->ID; ?>">
+					<td><input type="checkbox" class="md-row-check" data-uid="<?php echo (int) $u->ID; ?>"></td>
 					<td>
 						<div style="display:flex;align-items:center;gap:10px">
 							<img src="<?php echo esc_url( $avatar ); ?>" width="36" height="36" style="border-radius:50%;flex-shrink:0" alt="">
@@ -383,8 +412,81 @@ function milieus_render_all_members_page(): void {
 			for (var k in data) fd.append(k, data[k]);
 			fetch(ajaxurl, { method: 'POST', body: fd, credentials: 'same-origin' })
 				.then(function(r) { return r.json(); })
-				.then(function(r) { if (cb) cb(r); });
+				.then(function(r) { if (cb) cb(r); })
+				.catch(function() { alert(<?php echo wp_json_encode( __( 'Network error — please try again.', 'milieus' ) ); ?>); });
 		}
+
+		// ── Bulk actions ──────────────────────────────────────────────────
+		var checkAll = document.getElementById('md-check-all');
+		var bulkBar = document.getElementById('md-bulk-bar');
+		var bulkCount = document.getElementById('md-bulk-count');
+
+		function getCheckedIds() {
+			return Array.prototype.slice.call(document.querySelectorAll('.md-row-check:checked')).map(function(c){ return c.dataset.uid; });
+		}
+		function updateBulkBar() {
+			var ids = getCheckedIds();
+			bulkBar.style.display = ids.length > 0 ? 'flex' : 'none';
+			bulkCount.textContent = ids.length;
+		}
+		if (checkAll) {
+			checkAll.addEventListener('change', function() {
+				document.querySelectorAll('.md-row-check').forEach(function(c){ c.checked = checkAll.checked; });
+				updateBulkBar();
+			});
+		}
+		document.querySelectorAll('.md-row-check').forEach(function(c){
+			c.addEventListener('change', updateBulkBar);
+		});
+
+		// Bulk add/remove menus
+		function setupBulkMenu(btnId, menuId) {
+			var btn = document.getElementById(btnId);
+			var menu = document.getElementById(menuId);
+			if (!btn || !menu) return;
+			btn.addEventListener('click', function(e) {
+				e.stopPropagation();
+				menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+			});
+			document.addEventListener('click', function(e) {
+				if (!btn.contains(e.target) && !menu.contains(e.target)) menu.style.display = 'none';
+			});
+		}
+		setupBulkMenu('md-bulk-add-btn', 'md-bulk-add-menu');
+		setupBulkMenu('md-bulk-remove-btn', 'md-bulk-remove-menu');
+
+		document.querySelectorAll('.md-bulk-add-group').forEach(function(btn) {
+			btn.addEventListener('click', function() {
+				var ids = getCheckedIds();
+				if (!ids.length) return;
+				var group = btn.dataset.group;
+				btn.textContent = <?php echo wp_json_encode( __( 'Adding…', 'milieus' ) ); ?>;
+				var done = 0;
+				ids.forEach(function(uid) {
+					post('milieus_directory_add', { user_id: uid, group: group }, function() {
+						done++;
+						if (done >= ids.length) location.reload();
+					});
+				});
+			});
+		});
+
+		document.querySelectorAll('.md-bulk-remove-group').forEach(function(btn) {
+			btn.addEventListener('click', function() {
+				var ids = getCheckedIds();
+				if (!ids.length) return;
+				if (!confirm(<?php echo wp_json_encode( sprintf( __( 'Remove %s user(s) from this group?', 'milieus' ), '" + ids.length + "' ) ); ?>)) return;
+				var group = btn.dataset.group;
+				btn.textContent = <?php echo wp_json_encode( __( 'Removing…', 'milieus' ) ); ?>;
+				var done = 0;
+				ids.forEach(function(uid) {
+					post('milieus_directory_remove', { user_id: uid, group: group }, function() {
+						done++;
+						if (done >= ids.length) location.reload();
+					});
+				});
+			});
+		});
 	})();
 	</script>
 	<?php
