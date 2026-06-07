@@ -7,6 +7,12 @@
 	var AJAX  = window.MilieusAjax || (window.ajaxurl || '/wp-admin/admin-ajax.php');
 	var SITE_URL = window.MilieusSiteUrl || '/register/';
 
+	// Safe JSON parser: throws a clear error if the server returns non-JSON (PHP fatal, 502, login redirect).
+	function safeJson(r) {
+		if (!r.ok) throw new Error('HTTP ' + r.status);
+		return r.json();
+	}
+
 	// ── Toast utility ──────────────────────────────────────────────────
 	var toastContainer = null;
 	function toast(msg, type) {
@@ -316,7 +322,9 @@
 			var url = val('[data-bg-image]');
 			var dim = $('[data-bg-dim]') && $('[data-bg-dim]').checked;
 			var overlay = dim ? 'linear-gradient(rgba(0,0,0,.3),rgba(0,0,0,.3)), ' : '';
-			stage.style.background = url ? overlay + 'url("' + url + '") center/cover no-repeat' : '#fafaf9';
+			// Sanitize URL: strip quotes/parens to prevent CSS injection
+			var safeUrl = url ? url.replace(/["'()\\]/g, '') : '';
+			stage.style.background = safeUrl ? overlay + 'url("' + safeUrl + '") center/cover no-repeat' : '#fafaf9';
 		}
 	}
 	bindColor('[data-bg-solid]', '[data-bg-solid-hex]');
@@ -330,11 +338,27 @@
 	if (copyBtn) {
 		copyBtn.addEventListener('click', function() {
 			var url = SITE_URL + (val('[data-reg-slug]') || '');
-			if (navigator.clipboard) navigator.clipboard.writeText(url);
-			var orig = copyBtn.textContent;
-			copyBtn.textContent = '✓ Copied';
-			setTimeout(function() { copyBtn.textContent = orig; }, 1200);
+			var done = function() {
+				var orig = copyBtn.textContent;
+				copyBtn.textContent = '✓ Copied';
+				setTimeout(function() { copyBtn.textContent = orig; }, 1200);
+			};
+			if (navigator.clipboard && navigator.clipboard.writeText) {
+				navigator.clipboard.writeText(url).then(done).catch(function() {
+					// Fallback for non-HTTPS contexts
+					fallbackCopy(url); done();
+				});
+			} else {
+				fallbackCopy(url); done();
+			}
 		});
+	}
+	function fallbackCopy(text) {
+		var ta = document.createElement('textarea');
+		ta.value = text; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+		document.body.appendChild(ta); ta.select();
+		try { document.execCommand('copy'); } catch(e) {}
+		document.body.removeChild(ta);
 	}
 
 	// ── Save / Delete ──────────────────────────────────────────────────
@@ -418,7 +442,7 @@
 		resultEl.textContent = 'Saving…'; resultEl.style.color = 'var(--tx2,#666)';
 
 		fetch(AJAX, { method: 'POST', credentials: 'same-origin', body: collectFormData() })
-			.then(function(r) { return r.json(); })
+			.then(safeJson)
 			.then(function(j) {
 				btn.disabled = false; btn.style.opacity = '';
 				if (j && j.success) {
@@ -439,11 +463,13 @@
 	});
 
 	$('[data-role-delete]').addEventListener('click', function() {
+		var btn = this;
 		var key  = val('[data-role-key]');
 		var name = val('[data-role-name]');
 		if (!key) return;
 		if (!confirm('Delete group "' + name + '"? Members will revert to the default group.')) return;
 
+		btn.disabled = true;
 		var fd = new FormData();
 		fd.append('action', 'milieus_role_delete');
 		fd.append('nonce', nonce);
@@ -451,7 +477,7 @@
 
 		resultEl.textContent = 'Deleting…';
 		fetch(AJAX, { method: 'POST', credentials: 'same-origin', body: fd })
-			.then(function(r) { return r.json(); })
+			.then(safeJson)
 			.then(function(j) {
 				if (j && j.success) {
 					resultEl.textContent = '✓ ' + (j.data.msg || 'Deleted');
@@ -461,9 +487,10 @@
 				} else {
 					resultEl.textContent = '✗ ' + ((j && j.data) || 'Failed');
 					resultEl.style.color = 'var(--err,#dc2626)';
+					btn.disabled = false;
 				}
 			})
-			.catch(function() { toast('Network error', 'err'); resultEl.textContent = ''; });
+			.catch(function() { btn.disabled = false; toast('Network error', 'err'); resultEl.textContent = ''; });
 	});
 
 	// ── Members tab ────────────────────────────────────────────────────
@@ -478,7 +505,7 @@
 		fd.append('key', currentKey);
 		fd.append('page', membersPage);
 		fetch(AJAX, { method: 'POST', credentials: 'same-origin', body: fd })
-			.then(function(r) { return r.json(); })
+			.then(safeJson)
 			.then(function(j) {
 				if (!j || !j.success) { toast('Failed to load members', 'err'); return; }
 				$('[data-members-count]').textContent = j.data.total;
@@ -582,7 +609,7 @@
 		fd.append('bulk_action', action);
 		ids.forEach(function(id) { fd.append('user_ids[]', id); });
 		fetch(AJAX, { method: 'POST', credentials: 'same-origin', body: fd })
-			.then(function(r) { return r.json(); })
+			.then(safeJson)
 			.then(function(j) { if (cb) cb(j); })
 			.catch(function() { toast('Network error', 'err'); });
 	}
@@ -609,7 +636,7 @@
 		fd.append('key', currentKey);
 		fd.append('q', q);
 		fetch(AJAX, { method: 'POST', credentials: 'same-origin', body: fd })
-			.then(function(r) { return r.json(); })
+			.then(safeJson)
 			.then(function(j) {
 				if (!j || !j.success) return;
 				searchResults.innerHTML = '';
@@ -642,7 +669,7 @@
 		fd.append('key', currentKey);
 		fd.append('user_id', uid);
 		fetch(AJAX, { method: 'POST', credentials: 'same-origin', body: fd })
-			.then(function(r) { return r.json(); })
+			.then(safeJson)
 			.then(function() { loadMembers(); })
 			.catch(function() { toast('Network error', 'err'); });
 	}
@@ -680,7 +707,7 @@
 			fd.append('key', key);
 			resultEl.textContent = 'Duplicating…';
 			fetch(AJAX, { method: 'POST', credentials: 'same-origin', body: fd })
-				.then(function(r) { return r.json(); })
+				.then(safeJson)
 				.then(function(j) {
 					if (j && j.success) {
 						resultEl.textContent = '✓ Duplicated as "' + j.data.name + '"';
@@ -712,7 +739,7 @@
 			fd.append('csv', csvBlob.value);
 			csvResult.textContent = 'Importing…';
 			fetch(AJAX, { method: 'POST', credentials: 'same-origin', body: fd })
-				.then(function(r) { return r.json(); })
+				.then(safeJson)
 				.then(function(j) {
 					if (j && j.success) {
 						csvResult.textContent = '✓ Added ' + j.data.added + ', skipped ' + j.data.skipped;
@@ -741,7 +768,7 @@
 		fd.append('value', sel.value);
 		if (resultEl) { resultEl.textContent = 'Saving…'; resultEl.style.color = 'var(--tx3,#999)'; }
 		fetch(AJAX, { method: 'POST', credentials: 'same-origin', body: fd })
-			.then(function(r) { return r.json(); })
+			.then(safeJson)
 			.then(function(j) {
 				if (!resultEl) return;
 				if (j && j.success) {

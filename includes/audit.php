@@ -365,8 +365,9 @@ add_action( 'wp_ajax_milieus_audit_user_search', function() {
 	$q = sanitize_text_field( wp_unslash( $_POST['q'] ?? '' ) );
 	if ( strlen( $q ) < 2 ) wp_send_json_success( [] );
 
+	global $wpdb;
 	$query = new WP_User_Query( [
-		'search'         => '*' . esc_attr( $q ) . '*',
+		'search'         => '*' . $wpdb->esc_like( $q ) . '*',
 		'search_columns' => [ 'user_login', 'user_email', 'display_name' ],
 		'number'         => 8,
 		'fields'         => [ 'ID', 'display_name', 'user_email' ],

@@ -59,6 +59,12 @@ add_action( 'admin_post_milieus_approve', function() {
 	$uid = (int) ( $_POST['user_id'] ?? 0 );
 	$pending = (string) get_user_meta( $uid, MILIEUS_PENDING_KEY, true );
 	if ( $uid && $pending ) {
+		if ( ! milieus_get_group( $pending ) ) {
+			// Group was deleted since signup — clean up pending flag.
+			delete_user_meta( $uid, MILIEUS_PENDING_KEY );
+			wp_safe_redirect( admin_url( 'admin.php?page=milieus-approvals&flash=rejected' ) );
+			exit;
+		}
 		milieus_assign_member( $uid, $pending, 'link' );
 		delete_user_meta( $uid, MILIEUS_PENDING_KEY );
 		do_action( 'milieus_member_approved', $uid, $pending );

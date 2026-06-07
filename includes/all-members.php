@@ -37,6 +37,8 @@ add_action( 'wp_ajax_milieus_directory_add', function() {
 	$uid = (int) ( $_POST['user_id'] ?? 0 );
 	$key = sanitize_key( $_POST['group'] ?? '' );
 	if ( ! $uid || ! $key ) wp_send_json_error( 'missing args' );
+	if ( ! get_userdata( $uid ) ) wp_send_json_error( 'user not found' );
+	if ( ! milieus_get_group( $key ) ) wp_send_json_error( 'group not found' );
 	if ( ! milieus_assign_member( $uid, $key, 'manual' ) ) wp_send_json_error( 'assign failed' );
 	wp_send_json_success( [ 'user_id' => $uid, 'group' => $key ] );
 } );
@@ -48,6 +50,7 @@ add_action( 'wp_ajax_milieus_directory_remove', function() {
 	$uid = (int) ( $_POST['user_id'] ?? 0 );
 	$key = sanitize_key( $_POST['group'] ?? '' );
 	if ( ! $uid || ! $key ) wp_send_json_error( 'missing args' );
+	if ( ! get_userdata( $uid ) ) wp_send_json_error( 'user not found' );
 	milieus_revoke_member( $uid, $key );
 	wp_send_json_success( [ 'user_id' => $uid, 'group' => $key ] );
 } );
@@ -97,7 +100,8 @@ function milieus_render_all_members_page(): void {
 	];
 
 	if ( $search ) {
-		$args['search']         = '*' . esc_attr( $search ) . '*';
+		global $wpdb;
+		$args['search']         = '*' . $wpdb->esc_like( $search ) . '*';
 		$args['search_columns'] = [ 'user_login', 'user_email', 'display_name' ];
 	}
 
@@ -409,10 +413,12 @@ function milieus_render_all_members_page(): void {
 				var uid = btn.dataset.uid, group = btn.dataset.group;
 				var pill = btn.closest('.md-pill');
 				pill.style.opacity = '.4';
-				post('milieus_directory_remove', { user_id: uid, group: group }, function() {
+				post('milieus_directory_remove', { user_id: uid, group: group }, function(r) {
+					if (!r || !r.success) { pill.style.opacity = ''; return; }
 					pill.remove();
 					// If no pills left, show placeholder.
-					var container = btn.closest('tr').querySelector('.md-pills');
+					var row = pill.closest('tr');
+					var container = row ? row.querySelector('.md-pills') : null;
 					if (container && !container.querySelector('.md-pill')) {
 						container.innerHTML = '<span style="color:var(--tx3);font-size:12px"><?php echo esc_js( __( 'No groups', 'milieus' ) ); ?></span>';
 					}
@@ -435,9 +441,9 @@ function milieus_render_all_members_page(): void {
 			var fd = new FormData();
 			for (var k in data) fd.append(k, data[k]);
 			fetch(ajaxurl, { method: 'POST', body: fd, credentials: 'same-origin' })
-				.then(function(r) { return r.json(); })
+				.then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
 				.then(function(r) { if (cb) cb(r); })
-				.catch(function() { alert(<?php echo wp_json_encode( __( 'Network error — please try again.', 'milieus' ) ); ?>); });
+				.catch(function(err) { alert(<?php echo wp_json_encode( __( 'Request failed — please try again.', 'milieus' ) ); ?> + ' (' + err.message + ')'); if (cb) cb(null); });
 		}
 
 		// ── Bulk actions ──────────────────────────────────────────────────
@@ -532,7 +538,13 @@ function milieus_render_all_members_page(): void {
 					}
 					bulkDeleteBtn.textContent = <?php echo wp_json_encode( __( 'Deleting ', 'milieus' ) ); ?> + (i + 1) + '/' + ids.length + '…';
 					post('milieus_directory_delete', { user_id: ids[i] }, function(r) {
-						if (!r || !r.success) failed++;
+						if (r === null) {
+							// Network error — halt chain
+							bulkDeleteBtn.textContent = <?php echo wp_json_encode( __( 'Error — reloading…', 'milieus' ) ); ?>;
+							setTimeout(function() { location.reload(); }, 1500);
+							return;
+						}
+						if (!r.success) failed++;
 						i++;
 						deleteNext();
 					});

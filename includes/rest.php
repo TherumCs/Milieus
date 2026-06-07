@@ -87,6 +87,8 @@ add_action( 'rest_api_init', function() {
 		'callback'            => function( WP_REST_Request $req ) {
 			$key = sanitize_key( $req['key'] );
 			$uid = (int) $req['user_id'];
+			if ( ! get_userdata( $uid ) ) return new WP_Error( 'milieus_user_not_found', 'User not found', [ 'status' => 404 ] );
+			if ( ! milieus_get_group( $key ) ) return new WP_Error( 'milieus_group_not_found', 'Group not found', [ 'status' => 404 ] );
 			$ok = milieus_revoke_member( $uid, $key );
 			return rest_ensure_response( [ 'revoked' => $ok ] );
 		},
@@ -98,6 +100,8 @@ add_action( 'rest_api_init', function() {
 		'callback'            => function( WP_REST_Request $req ) {
 			$key = sanitize_key( $req['key'] );
 			$uid = (int) $req['user_id'];
+			if ( ! get_userdata( $uid ) ) return new WP_Error( 'milieus_user_not_found', 'User not found', [ 'status' => 404 ] );
+			if ( ! milieus_get_group( $key ) ) return new WP_Error( 'milieus_group_not_found', 'Group not found', [ 'status' => 404 ] );
 			$seconds = (int) $req->get_param( 'seconds' );
 			if ( $seconds <= 0 ) return new WP_Error( 'milieus_bad_seconds', 'seconds must be > 0', [ 'status' => 400 ] );
 			$new = milieus_extend_member( $uid, $key, $seconds );

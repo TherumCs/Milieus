@@ -157,6 +157,15 @@ add_action( 'wp_ajax_nopriv_milieus_shortcode_login', 'milieus_ajax_shortcode_lo
 function milieus_ajax_shortcode_login(): void {
 	check_ajax_referer( 'milieus_shortcode_login', 'milieus_nonce' );
 
+	// Rate limit: 5 attempts per IP per 15 minutes.
+	$ip  = sanitize_text_field( $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0' );
+	$key = 'milieus_login_' . md5( $ip );
+	$attempts = (int) get_transient( $key );
+	$max = (int) apply_filters( 'milieus_login_rate_per_15min', 5 );
+	if ( $attempts >= $max ) {
+		wp_send_json_error( __( 'Too many login attempts. Please try again later.', 'milieus' ) );
+	}
+
 	$slug = sanitize_title( $_POST['slug'] ?? '' );
 	$group = milieus_group_by_reg_slug( $slug );
 	if ( ! $group ) wp_send_json_error( __( 'Invalid login link.', 'milieus' ) );
@@ -168,8 +177,12 @@ function milieus_ajax_shortcode_login(): void {
 	];
 	$user = wp_signon( $creds, is_ssl() );
 	if ( is_wp_error( $user ) ) {
+		set_transient( $key, $attempts + 1, 15 * MINUTE_IN_SECONDS );
 		wp_send_json_error( __( 'Email or password did not match.', 'milieus' ) );
 	}
+
+	// Clear rate limit on successful login.
+	delete_transient( $key );
 
 	$redirect = esc_url_raw( $_POST['redirect'] ?? '' ) ?: ( $group['reg']['redirect'] ?: home_url( '/' ) );
 	wp_send_json_success( [ 'redirect' => $redirect ] );

@@ -82,6 +82,7 @@ function milieus_webhooks_fire( string $event, array $payload ): void {
 
 		$signature = hash_hmac( 'sha256', $body, (string) ( $h['secret'] ?? '' ) );
 		wp_remote_post( $h['url'], [
+			'reject_unsafe_urls' => true,
 			'blocking' => false,
 			'timeout'  => 5,
 			'headers'  => [
@@ -119,6 +120,7 @@ add_action( 'admin_post_milieus_webhooks_save', function() {
 	foreach ( $incoming as $row ) {
 		$url = esc_url_raw( $row['url'] ?? '' );
 		if ( ! $url ) continue;
+		if ( ! wp_http_validate_url( $url ) ) continue; // reject private/reserved IPs
 		$events = array_values( array_intersect( $valid_events, (array) ( $row['events'] ?? [] ) ) );
 		$secret = sanitize_text_field( $row['secret'] ?? '' );
 		$enabled = ! empty( $row['enabled'] );
@@ -253,6 +255,7 @@ add_action( 'wp_ajax_milieus_webhook_test', function() {
 	$url    = esc_url_raw( $_POST['url'] ?? '' );
 	$secret = sanitize_text_field( $_POST['secret'] ?? '' );
 	if ( ! $url ) wp_send_json_error( __( 'URL is required.', 'milieus' ) );
+	if ( ! wp_http_validate_url( $url ) ) wp_send_json_error( __( 'URL is not allowed (private/reserved IP).', 'milieus' ) );
 
 	$body = wp_json_encode( [
 		'event'     => 'test.ping',
@@ -263,6 +266,7 @@ add_action( 'wp_ajax_milieus_webhook_test', function() {
 
 	$signature = hash_hmac( 'sha256', $body, $secret );
 	$response  = wp_remote_post( $url, [
+		'reject_unsafe_urls' => true,
 		'blocking' => true,
 		'timeout'  => 10,
 		'headers'  => [
