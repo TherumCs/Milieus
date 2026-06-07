@@ -218,17 +218,15 @@ function milieus_render_all_members_page(): void {
 				<th><?php esc_html_e( 'Groups', 'milieus' ); ?></th>
 				<th style="width:110px"><a href="<?php echo esc_url( $sort_url( 'registered' ) ); ?>" style="text-decoration:none;color:inherit"><?php esc_html_e( 'Joined', 'milieus' ); ?><?php echo $sort_icon( 'registered' ); ?></a></th>
 				<th style="width:110px"><?php esc_html_e( 'Expires', 'milieus' ); ?></th>
-				<th style="width:100px"><?php esc_html_e( 'WP Role', 'milieus' ); ?></th>
 				<th style="width:44px"></th>
 			</tr></thead>
 			<tbody>
 				<?php if ( ! $users ): ?>
-					<tr><td colspan="7" style="text-align:center;color:var(--tx3);padding:20px"><?php esc_html_e( 'No users match these filters.', 'milieus' ); ?></td></tr>
+					<tr><td colspan="6" style="text-align:center;color:var(--tx3);padding:20px"><?php esc_html_e( 'No users match these filters.', 'milieus' ); ?></td></tr>
 				<?php endif; ?>
 				<?php foreach ( $users as $u ):
 					$memberships = $user_groups[ $u->ID ] ?? [];
 					$avatar = get_avatar_url( $u->ID, [ 'size' => 36 ] );
-					$wp_role = ! empty( $u->roles ) ? ucfirst( str_replace( '_', ' ', $u->roles[0] ) ) : '—';
 
 					// For Expires column, show the earliest-expiring membership.
 					$earliest = null;
@@ -289,7 +287,6 @@ function milieus_render_all_members_page(): void {
 						}
 						?>
 					</td>
-					<td class="th-roles-caps"><?php echo esc_html( $wp_role ); ?></td>
 					<td style="text-align:right;position:relative">
 						<button type="button" class="md-menu-btn" title="<?php esc_attr_e( 'Actions', 'milieus' ); ?>" style="background:none;border:1px solid var(--bd);border-radius:6px;width:32px;height:32px;cursor:pointer;font-size:16px;color:var(--tx2);display:inline-flex;align-items:center;justify-content:center;transition:background .1s">&middot;&middot;&middot;</button>
 						<div class="md-menu" style="display:none;position:absolute;right:0;top:36px;background:#fff;border:1px solid var(--bd);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.1);min-width:200px;z-index:50;padding:6px 0;font-size:13px">
