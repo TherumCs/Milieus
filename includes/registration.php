@@ -62,6 +62,21 @@ function milieus_handle_branded_login(): void {
 	$prefill = '';
 	if ( $_SERVER['REQUEST_METHOD'] === 'POST' ) {
 		check_admin_referer( 'milieus_login_' . $group['reg']['slug'], 'milieus_nonce' );
+
+		// Rate limit — 5 login attempts per 15 min per IP (matches shortcode login).
+		$ip = function_exists( 'milieus_client_ip' ) ? milieus_client_ip() : ( $_SERVER['REMOTE_ADDR'] ?? '' );
+		if ( $ip ) {
+			$rl_key   = 'milieus_login_rl_' . md5( $ip );
+			$rl_count = (int) get_transient( $rl_key );
+			if ( $rl_count >= 5 ) {
+				status_header( 429 );
+				$errors[] = __( 'Too many login attempts. Please try again later.', 'milieus' );
+				milieus_render_branded_login( $group, $errors, '' );
+				exit;
+			}
+			set_transient( $rl_key, $rl_count + 1, 15 * MINUTE_IN_SECONDS );
+		}
+
 		$creds = [
 			'user_login'    => sanitize_text_field( $_POST['email'] ?? '' ),
 			'user_password' => (string) ( $_POST['password'] ?? '' ),

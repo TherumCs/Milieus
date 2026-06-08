@@ -30,7 +30,8 @@ function milieus_list_members( string $role_key, int $page = 1, string $search =
 		'order'   => 'DESC',
 	];
 	if ( $search ) {
-		$args['search']         = '*' . esc_attr( $search ) . '*';
+		global $wpdb;
+		$args['search']         = '*' . $wpdb->esc_like( $search ) . '*';
 		$args['search_columns'] = [ 'user_login', 'user_email', 'display_name' ];
 	}
 
@@ -103,7 +104,7 @@ add_action( 'wp_ajax_milieus_members_search', function() {
 	if ( strlen( $q ) < 2 ) wp_send_json_success( [] );
 
 	$query = new WP_User_Query( [
-		'search'         => '*' . esc_attr( $q ) . '*',
+		'search'         => '*' . $GLOBALS['wpdb']->esc_like( $q ) . '*',
 		'search_columns' => [ 'user_login', 'user_email', 'display_name' ],
 		'role__not_in'   => [ $key ],
 		'number'         => 8,
