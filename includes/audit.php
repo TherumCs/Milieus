@@ -159,6 +159,10 @@ add_action( 'admin_post_milieus_audit_export', function() {
 	header( 'Content-Type: text/csv; charset=utf-8' );
 	header( 'Content-Disposition: attachment; filename="milieus-audit-' . gmdate( 'Ymd' ) . '.csv"' );
 
+	// Pre-cache all user lookups in one query — avoids N+1 get_userdata() per row.
+	$user_ids = array_unique( array_filter( array_map( fn( $r ) => (int) $r['user_id'], $rows ) ) );
+	if ( $user_ids ) cache_users( $user_ids );
+
 	$out = fopen( 'php://output', 'w' );
 	fputcsv( $out, [ 'ts', 'event', 'user_id', 'user_email', 'group', 'actor_id', 'source', 'note' ] );
 	foreach ( $rows as $r ) {

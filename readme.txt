@@ -2,9 +2,9 @@
 Contributors: therumstudios
 Tags: roles, capabilities, user management, woocommerce, pricing
 Requires at least: 6.4
-Tested up to: 6.7
+Tested up to: 6.8
 Requires PHP: 8.0
-Stable tag: 1.5.0
+Stable tag: 1.5.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,6 +69,17 @@ It's applied as a negative cart fee on `woocommerce_cart_calculate_fees`, so it 
 Milieus restores core administrator caps on every admin page load. It's there to prevent third-party tools from accidentally locking you out of wp-admin. To turn it off, set `MILIEUS_DISABLE_CAPS_HEAL` to `true` in `wp-config.php`.
 
 == Changelog ==
+
+= 1.5.2 =
+* **Production hardening for WordPress.org repo.**
+* Security: complete `uninstall.php` cleanup — removes audit table, all options, user meta (assigned/expires/source/pending/welcome flags), and clears scheduled cron. No orphan data after delete.
+* Security: silent `index.php` files in `includes/` and `assets/` to block open-directory listing.
+* Performance: audit log CSV export pre-caches user lookups (eliminates N+1 `get_userdata()` queries).
+* Compatibility: bumped `Tested up to: 6.8`.
+
+= 1.5.1 =
+* Security: replace `esc_attr()` with `$wpdb->esc_like()` in member-search and members-typeahead queries — prevents `%` wildcard from matching all users.
+* Security: rate-limit branded `/login/{slug}` page (5 attempts per 15 min per IP) — was the only login surface without brute-force protection.
 
 = 1.5.0 =
 * **AJAX login shortcode** — `[milieus_login]` now submits via AJAX instead of navigating away, preventing 404s on embedded forms.
